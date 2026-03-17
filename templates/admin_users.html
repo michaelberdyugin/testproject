@@ -11,7 +11,7 @@
             </a>
             <span class="fs-4 fw-semibold">Пользователи</span>
         </div>
-        <span class="text-muted">Всего: {{ users|length }}</span>
+        <span class="text-muted">Найдено: {{ users|length }}</span>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -23,6 +23,43 @@
         {% endfor %}
     {% endwith %}
 
+    <!-- Форма поиска -->
+    <form method="GET" action="/admin/users" class="card card-body mb-4">
+        <div class="row g-2 align-items-end">
+            <div class="col-sm-2">
+                <label class="form-label">ID</label>
+                <input type="number" class="form-control" name="id" value="{{ q_id }}" placeholder="123">
+            </div>
+            <div class="col-sm-3">
+                <label class="form-label">Имя пользователя</label>
+                <input type="text" class="form-control" name="name" value="{{ q_name }}" placeholder="Поиск...">
+            </div>
+            <div class="col-sm-3">
+                <label class="form-label">Email</label>
+                <input type="text" class="form-control" name="email" value="{{ q_email }}" placeholder="Поиск...">
+            </div>
+            <div class="col-sm-2">
+                <label class="form-label">Статус</label>
+                <select class="form-select" name="status">
+                    <option value="" {% if q_status == '' %}selected{% endif %}>Все</option>
+                    <option value="0" {% if q_status == '0' %}selected{% endif %}>Пользователь</option>
+                    <option value="1" {% if q_status == '1' %}selected{% endif %}>Модератор</option>
+                    <option value="2" {% if q_status == '2' %}selected{% endif %}>Администратор</option>
+                </select>
+            </div>
+            <div class="col-sm-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Найти
+                </button>
+                <a href="/admin/users" class="btn btn-outline-secondary" title="Сбросить">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Таблица пользователей -->
+    {% if users %}
     <div class="table-responsive">
         <table class="table table-bordered table-hover align-middle">
             <thead class="table-dark">
@@ -74,83 +111,89 @@
                         </div>
                     </td>
                 </tr>
-
-                <!-- Модальное окно: изменить имя -->
-                <div class="modal fade" id="renameModal{{ user.id }}" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Изменить имя: {{ user.username }}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <form method="POST" action="{{ url_for('admin_update_username', user_id=user.id) }}">
-                                <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label class="form-label">Новое имя пользователя</label>
-                                        <input type="text" class="form-control" name="username"
-                                               value="{{ user.username }}" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Причина изменения (опционально)</label>
-                                        <textarea class="form-control" name="reason" rows="2"
-                                                  placeholder="Укажите причину..."></textarea>
-                                    </div>
-                                    <div class="alert alert-info mb-0">
-                                        <i class="bi bi-info-circle"></i>
-                                        Пользователь получит уведомление об изменении имени.
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                                    <button type="submit" class="btn btn-primary">Сохранить</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Модальное окно: изменить статус -->
-                {% if user.id != current_user.id %}
-                <div class="modal fade" id="statusModal{{ user.id }}" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Изменить статус: {{ user.username }}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <form method="POST" action="{{ url_for('admin_update_status', user_id=user.id) }}">
-                                <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label class="form-label">Новый статус</label>
-                                        <select class="form-select" name="admin_status" required>
-                                            <option value="0" {% if user.admin == 0 %}selected{% endif %}>Пользователь</option>
-                                            <option value="1" {% if user.admin == 1 %}selected{% endif %}>Модератор</option>
-                                            <option value="2" {% if user.admin == 2 %}selected{% endif %}>Администратор</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">Причина изменения (опционально)</label>
-                                        <textarea class="form-control" name="reason" rows="2"
-                                                  placeholder="Укажите причину..."></textarea>
-                                    </div>
-                                    <div class="alert alert-info mb-0">
-                                        <i class="bi bi-info-circle"></i>
-                                        Пользователь получит уведомление об изменении статуса.
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                                    <button type="submit" class="btn btn-warning">Изменить статус</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% else %}
+    <div class="alert alert-secondary text-center">Пользователи не найдены.</div>
+    {% endif %}
+
+    <!-- Модальные окна (вне таблицы) -->
+    {% for user in users %}
+
+    <div class="modal fade" id="renameModal{{ user.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Изменить имя: {{ user.username }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('admin_update_username', user_id=user.id) }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Новое имя пользователя</label>
+                            <input type="text" class="form-control" name="username"
+                                   value="{{ user.username }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Причина изменения (опционально)</label>
+                            <textarea class="form-control" name="reason" rows="2"
+                                      placeholder="Укажите причину..."></textarea>
+                        </div>
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            Пользователь получит уведомление об изменении имени.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if user.id != current_user.id %}
+    <div class="modal fade" id="statusModal{{ user.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Изменить статус: {{ user.username }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('admin_update_status', user_id=user.id) }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Новый статус</label>
+                            <select class="form-select" name="admin_status" required>
+                                <option value="0" {% if user.admin == 0 %}selected{% endif %}>Пользователь</option>
+                                <option value="1" {% if user.admin == 1 %}selected{% endif %}>Модератор</option>
+                                <option value="2" {% if user.admin == 2 %}selected{% endif %}>Администратор</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Причина изменения (опционально)</label>
+                            <textarea class="form-control" name="reason" rows="2"
+                                      placeholder="Укажите причину..."></textarea>
+                        </div>
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            Пользователь получит уведомление об изменении статуса.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" class="btn btn-warning">Изменить статус</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% endfor %}
+
 </div>
 {% endblock %}

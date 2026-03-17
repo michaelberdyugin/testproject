@@ -380,7 +380,10 @@ def login():
         return render_template("login.html")
     username = request.form.get('username')
     password = request.form.get('password')
+    # Ищем по имени или по почте
     user = User.query.filter_by(username=username).first()
+    if user is None:
+        user = User.query.filter_by(email=username).first()
     if user is None:
         flash('Такого пользователя не существует', 'danger')
         return redirect("/login")
@@ -2410,12 +2413,32 @@ def admin_1():
 @app.route('/admin/users')
 @login_required
 def admin_users():
-    """Список пользователей для администратора."""
+    """Список пользователей для администратора с поиском."""
     if current_user.admin < 2:
         flash("У вас нет доступа к этой странице!", 'danger')
         return redirect("/")
-    users = User.query.order_by(User.id).all()
-    return render_template("admin_users.html", users=users)
+
+    q_id     = request.args.get('id', '').strip()
+    q_name   = request.args.get('name', '').strip()
+    q_email  = request.args.get('email', '').strip()
+    q_status = request.args.get('status', '').strip()
+
+    query = User.query
+    if q_id:
+        try:
+            query = query.filter(User.id == int(q_id))
+        except ValueError:
+            pass
+    if q_name:
+        query = query.filter(User.username.ilike(f'%{q_name}%'))
+    if q_email:
+        query = query.filter(User.email.ilike(f'%{q_email}%'))
+    if q_status in ('0', '1', '2'):
+        query = query.filter(User.admin == int(q_status))
+
+    users = query.order_by(User.id).all()
+    return render_template("admin_users.html", users=users,
+                           q_id=q_id, q_name=q_name, q_email=q_email, q_status=q_status)
 
 
 @app.route('/admin/user/<int:user_id>/update-name', methods=['POST'])
@@ -2500,6 +2523,71 @@ def admin_update_status(user_id):
     db.session.commit()
     flash(f"Статус пользователя \"{user.username}\" изменён на \"{status_names[new_status]}\".", 'success')
     return redirect("/admin/users")
+
+
+@app.route('/admin/messages', methods=['GET'])
+@login_required
+def admin_messages():
+    """Страница отправки сообщений администратором."""
+    if current_user.admin < 2:
+        flash("У вас нет доступа!", 'danger')
+        return redirect("/")
+    users = User.query.order_by(User.username).all()
+    return render_template("admin_messages.html", users=users)
+
+
+@app.route('/admin/messages/send', methods=['POST'])
+@login_required
+def admin_send_message():
+    """Отправка сообщения пользователям."""
+    if current_user.admin < 2:
+        flash("У вас нет доступа!", 'danger')
+        return redirect("/")
+
+    text = request.form.get('text', '').strip()
+    link = request.form.get('link', '').strip() or None
+    target = request.form.get('target')  # 'all', 'single', 'multiple'
+
+    if not text:
+        flash("Текст сообщения не может быть пустым!", 'danger')
+        return redirect("/admin/messages")
+
+    if target == 'all':
+        recipients = User.query.all()
+    elif target == 'single':
+        user_id = request.form.get('user_id', '').strip()
+        try:
+            user = User.query.get(int(user_id))
+        except (ValueError, TypeError):
+            user = None
+        if not user:
+            flash("Пользователь не найден!", 'danger')
+            return redirect("/admin/messages")
+        recipients = [user]
+    elif target == 'multiple':
+        user_ids = request.form.getlist('user_ids')
+        try:
+            recipients = User.query.filter(User.id.in_([int(i) for i in user_ids])).all()
+        except (ValueError, TypeError):
+            recipients = []
+        if not recipients:
+            flash("Не выбрано ни одного пользователя!", 'danger')
+            return redirect("/admin/messages")
+    else:
+        flash("Неверный тип получателей!", 'danger')
+        return redirect("/admin/messages")
+
+    for user in recipients:
+        _create_notification(
+            user_id=user.id,
+            sender_id=current_user.id,
+            text=text,
+            link=link
+        )
+
+    db.session.commit()
+    flash(f"Сообщение отправлено {len(recipients)} пользователю(-ям).", 'success')
+    return redirect("/admin/messages")
 
 @app.route('/addanswer_11', methods=["GET", "POST"])
 @login_required
@@ -2724,6 +2812,65 @@ def addanswer_31():
 def logout():
     logout_user()
     return redirect("/")
+
+
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template("profile.html")
+
+
+@app.route('/profile/update-username', methods=['POST'])
+@login_required
+def profile_update_username():
+    new_username = request.form.get('username', '').strip()
+    if not new_username:
+        flash("Имя не может быть пустым!", 'danger')
+        return redirect("/profile")
+    if User.query.filter(User.username == new_username, User.id != current_user.id).first():
+        flash("Это имя уже занято!", 'danger')
+        return redirect("/profile")
+    current_user.username = new_username
+    db.session.commit()
+    flash("Имя пользователя обновлено.", 'success')
+    return redirect("/profile")
+
+
+@app.route('/profile/update-email', methods=['POST'])
+@login_required
+def profile_update_email():
+    new_email = request.form.get('email', '').strip().lower()
+    if not new_email or '@' not in new_email:
+        flash("Введите корректную почту!", 'danger')
+        return redirect("/profile")
+    if User.query.filter(User.email == new_email, User.id != current_user.id).first():
+        flash("Эта почта уже используется!", 'danger')
+        return redirect("/profile")
+    current_user.email = new_email
+    db.session.commit()
+    flash("Почта обновлена.", 'success')
+    return redirect("/profile")
+
+
+@app.route('/profile/update-password', methods=['POST'])
+@login_required
+def profile_update_password():
+    current_password = request.form.get('current_password', '')
+    new_password = request.form.get('new_password', '')
+    new_password2 = request.form.get('new_password2', '')
+    if not check_password_hash(current_user.password, current_password):
+        flash("Неверный текущий пароль!", 'danger')
+        return redirect("/profile")
+    if len(new_password) < 6:
+        flash("Новый пароль должен быть не короче 6 символов!", 'danger')
+        return redirect("/profile")
+    if new_password != new_password2:
+        flash("Пароли не совпадают!", 'danger')
+        return redirect("/profile")
+    current_user.password = generate_password_hash(new_password)
+    db.session.commit()
+    flash("Пароль изменён.", 'success')
+    return redirect("/profile")
 
 if __name__ == "__main__":
     with app.app_context():
