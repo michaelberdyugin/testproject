@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Мастерская тестов
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-tools"></i> Мастерская тестов</h2>
+                <a href="/create" class="btn btn-success btn-lg">
+                    <i class="bi bi-plus-circle"></i> Создать новый тест
+                </a>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                Здесь вы можете управлять своими тестами: создавать новые, редактировать существующие и отслеживать их статус.
+            </div>
+
+            <!-- Тесты в разработке -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="bi bi-hammer"></i> В разработке 
+                        <span class="badge bg-dark">{{ tests_in_progress|length }}</span>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if tests_in_progress %}
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        {% for test in tests_in_progress %}
+                        <div class="col">
+                            <div class="card h-100 border-warning">
+                                {% if test.test_image %}
+                                <img src="{{ url_for('static', filename='img/' + test.test_image) }}" 
+                                     class="card-img-top" 
+                                     alt="{{ test.test_name }}"
+                                     style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                <img src="{{ url_for('static', filename='img/placeholder.png') }}" 
+                                     class="card-img-top" 
+                                     alt="Placeholder"
+                                     style="height: 200px; object-fit: cover;">
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ test.test_name }}</h5>
+                                    <p class="card-text text-muted small">{{ test.test_description[:100] }}{% if test.test_description|length > 100 %}...{% endif %}</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="/createnext" class="btn btn-primary">
+                                            <i class="bi bi-pencil"></i> Продолжить создание
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-outline-danger"
+                                                onclick="if(confirm('Удалить тест? Это действие нельзя отменить!')) { document.getElementById('delete-form-{{ test.test_id }}').submit(); }">
+                                            <i class="bi bi-trash"></i> Удалить
+                                        </button>
+                                    </div>
+                                    <form id="delete-form-{{ test.test_id }}" 
+                                          method="POST" 
+                                          action="/delete-test"
+                                          style="display: none;">
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">
+                        <i class="bi bi-inbox"></i> У вас нет тестов в разработке
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Тесты на проверке -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-hourglass-split"></i> На проверке 
+                        <span class="badge bg-dark">{{ tests_pending|length }}</span>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if tests_pending %}
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        {% for test in tests_pending %}
+                        <div class="col">
+                            <div class="card h-100 border-info">
+                                {% if test.test_image %}
+                                <img src="{{ url_for('static', filename='img/' + test.test_image) }}" 
+                                     class="card-img-top" 
+                                     alt="{{ test.test_name }}"
+                                     style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                <img src="{{ url_for('static', filename='img/placeholder.png') }}" 
+                                     class="card-img-top" 
+                                     alt="Placeholder"
+                                     style="height: 200px; object-fit: cover;">
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ test.test_name }}</h5>
+                                    <p class="card-text text-muted small">{{ test.test_description[:100] }}{% if test.test_description|length > 100 %}...{% endif %}</p>
+                                    <div class="alert alert-info small mb-2">
+                                        <i class="bi bi-clock"></i> Ожидает проверки модератором
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <a href="{{ url_for('edit_test', test_id=test.test_id) }}" 
+                                           class="btn btn-outline-secondary">
+                                            <i class="bi bi-pencil"></i> Редактировать
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">
+                        <i class="bi bi-inbox"></i> У вас нет тестов на проверке
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Опубликованные тесты -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-check-circle"></i> Опубликованные 
+                        <span class="badge bg-dark">{{ tests_published|length }}</span>
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if tests_published %}
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        {% for test in tests_published %}
+                        <div class="col">
+                            <div class="card h-100 border-success">
+                                {% if test.test_image %}
+                                <img src="{{ url_for('static', filename='img/' + test.test_image) }}" 
+                                     class="card-img-top" 
+                                     alt="{{ test.test_name }}"
+                                     style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                <img src="{{ url_for('static', filename='img/placeholder.png') }}" 
+                                     class="card-img-top" 
+                                     alt="Placeholder"
+                                     style="height: 200px; object-fit: cover;">
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ test.test_name }}</h5>
+                                    <p class="card-text text-muted small">{{ test.test_description[:100] }}{% if test.test_description|length > 100 %}...{% endif %}</p>
+                                    
+                                    <div class="d-grid gap-2">
+                                        <a href="/test/{{ test.test_name }}" 
+                                           class="btn btn-primary">
+                                            <i class="bi bi-box-arrow-up-right"></i> Открыть тест
+                                        </a>
+                                        <a href="{{ url_for('edit_test', test_id=test.test_id) }}" 
+                                           class="btn btn-outline-secondary">
+                                            <i class="bi bi-pencil"></i> Редактировать
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">
+                        <i class="bi bi-inbox"></i> У вас нет опубликованных тестов
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

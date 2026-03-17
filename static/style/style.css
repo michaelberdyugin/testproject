@@ -1,0 +1,51 @@
+  body {
+
+        }
+
+            .card-fixed {
+    width: 20rem;
+    display: flex;
+    flex-direction: column;
+    height: 28rem;
+    overflow: hidden;  /* ← Важно! Обрезает всё, что выходит за границы */
+    border: 1px solid rgba(0, 0, 0, 0.125);  /* ← Явная граница */
+    border-radius: 0.375rem;  /* ← Скругление углов */
+  }
+
+  .card-fixed .card-img-top {
+    width: 20rem;
+    height: 10rem;
+    object-fit: contain;
+    background-color: #fff;
+  }
+
+  .card-fixed .card-body {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .card-fixed .card-name {
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    /*-webkit-line-clamp: 3;*/
+    -webkit-box-orient: vertical;
+    line-height: 1.2rem;
+    font-size: 1.3rem
+  }
+
+  .card-fixed .card-description {
+    flex-grow: 1;
+    height: auto;
+    min-height: 8.4rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    /*-webkit-line-clamp: 7;*/
+    -webkit-box-orient: vertical;
+    line-height: 1.2rem;
+    margin-bottom: 1rem;
+    font-size: 1rem
+  }

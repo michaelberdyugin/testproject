@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Добавить правильный ответ
+{% endblock %}
+
+{% block main %}
+<div class="container mt-5">
+    <h3 class="mb-4">Добавить правильный ответ</h3>
+
+    <div class="alert alert-info">
+        <strong>Вопрос:</strong> {{ question.test_q_text }}
+        {% if question.test_q_image %}
+            <div class="mt-2">
+                <img src="{{ url_for('static', filename='img/' + question.test_q_image) }}" 
+                     alt="Изображение вопроса" 
+                     class="img-fluid" 
+                     style="max-width: 300px;">
+            </div>
+        {% endif %}
+    </div>
+
+    <form method="POST">
+        <div class="mb-3">
+            <textarea name="answer_text" class="form-control" rows="3"
+                      placeholder="Введите правильный ответ" required></textarea>
+        </div>
+
+        <p class="text-muted">Все добавленные ответы будут считаться правильными.</p>
+
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-success">Добавить ответ</button>
+            <a href="/createnext" class="btn btn-secondary">Готово</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Редактирование вопроса
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3>Редактирование вопроса</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Тест:</strong> {{ test.test_name }}<br>
+                        <strong>Тип вопроса:</strong> 
+                        {% if question.test_q_type == 1 %}Выбор одного ответа
+                        {% elif question.test_q_type == 2 %}Выбор нескольких ответов
+                        {% elif question.test_q_type == 3 %}Ручной ввод
+                        {% elif question.test_q_type == 11 %}Выбор одного ответа (с изображением)
+                        {% elif question.test_q_type == 21 %}Выбор нескольких ответов (с изображением)
+                        {% elif question.test_q_type == 31 %}Ручной ввод (с изображением)
+                        {% endif %}
+                    </div>
+                    
+                    {% if test.test_status == 2 and current_user.admin < 1 %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Внимание!</strong> Этот тест опубликован. При внесении любых изменений тест будет отправлен на повторную проверку модератором.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-warning">
+                        <strong><i class="bi bi-exclamation-triangle"></i> Правила редактирования:</strong>
+                        <ul class="mb-0 mt-2">
+                            {% if question.test_q_type in [1, 2, 11, 21] %}
+                            <li>Минимум <strong>2 варианта ответа</strong></li>
+                            <li>Минимум <strong>1 правильный ответ</strong></li>
+                            <li>Нельзя удалить последние 2 ответа</li>
+                            <li>Нельзя удалить или убрать правильность с последнего правильного ответа</li>
+                            {% elif question.test_q_type in [3, 31] %}
+                            <li>Минимум <strong>1 правильный вариант ответа</strong></li>
+                            <li>Нельзя удалить последний ответ</li>
+                            <li>Все ответы считаются правильными вариантами</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                    <form method="POST" 
+                          action="{{ url_for('update_question', question_id=question.test_q_id) }}"
+                          enctype="multipart/form-data"
+                          {% if test.test_status == 2 and current_user.admin < 1 %}onsubmit="return confirm('Вы уверены? Тест будет отправлен на повторную проверку модератором.');"{% endif %}>
+                        
+                        <!-- Текст вопроса -->
+                        <div class="mb-3">
+                            <label for="question_text" class="form-label">Текст вопроса</label>
+                            <textarea class="form-control" 
+                                      id="question_text" 
+                                      name="question_text" 
+                                      rows="3"
+                                      required>{{ question.test_q_text }}</textarea>
+                        </div>
+
+                        <!-- Текущее изображение -->
+                        {% if question.test_q_image %}
+                        <div class="mb-3">
+                            <label class="form-label">Текущее изображение</label>
+                            <div>
+                                <img src="{{ url_for('static', filename='img/' + question.test_q_image) }}"
+                                     alt="Изображение вопроса"
+                                     class="img-fluid"
+                                     style="max-height: 200px;">
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Новое изображение -->
+                        {% if question.test_q_type in [11, 21, 31] %}
+                        <div class="mb-3">
+                            <label for="question_image" class="form-label">
+                                {% if question.test_q_image %}Заменить изображение{% else %}Добавить изображение{% endif %}
+                            </label>
+                            <input type="file" 
+                                   class="form-control" 
+                                   id="question_image" 
+                                   name="question_image"
+                                   accept="image/*">
+                            <div class="form-text">Разрешены: PNG, JPG, JPEG, GIF, WEBP (макс. 16 МБ)</div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Комментарий модератора (только если модератор редактирует чужой тест) -->
+                        {% if current_user.admin >= 1 and test.test_id_creator != current_user.id %}
+                        <div class="mb-3">
+                            <label for="moderator_comment" class="form-label">
+                                <i class="bi bi-chat-left-text"></i> Комментарий для автора (опционально)
+                            </label>
+                            <textarea class="form-control" 
+                                      id="moderator_comment" 
+                                      name="moderator_comment" 
+                                      rows="2"
+                                      placeholder="Оставьте комментарий для автора теста..."></textarea>
+                            <div class="form-text">Автор получит уведомление с вашим комментарием</div>
+                        </div>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-save"></i> Сохранить изменения вопроса
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Редактирование ответов -->
+            <div class="card">
+                <div class="card-header">
+                    <h4>Ответы на вопрос</h4>
+                    <small class="text-muted">
+                        {% if question.test_q_type in [1, 2, 11, 21] %}
+                        Минимум 2 варианта ответа, из них хотя бы 1 правильный
+                        {% elif question.test_q_type in [3, 31] %}
+                        Минимум 1 правильный вариант ответа
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="card-body">
+                    <!-- Кнопка добавления нового ответа -->
+                    <div class="mb-3">
+                        <button type="button" 
+                                class="btn btn-success w-100" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#addAnswerForm">
+                            <i class="bi bi-plus-circle"></i> Добавить новый ответ
+                        </button>
+                    </div>
+
+                    <!-- Форма добавления нового ответа (скрыта по умолчанию) -->
+                    <div class="collapse mb-4" id="addAnswerForm">
+                        <div class="card border-success">
+                            <div class="card-body">
+                                <h5 class="card-title">Новый ответ</h5>
+                                <form method="POST" 
+                                      action="{{ url_for('add_answer', question_id=question.test_q_id) }}"
+                                      {% if test.test_status == 2 and current_user.admin < 1 %}onsubmit="return confirm('Вы уверены? Тест будет отправлен на повторную проверку модератором.');"{% endif %}>
+                                    
+                                    <div class="mb-3">
+                                        <label for="new_answer_text" class="form-label">Текст ответа</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="new_answer_text" 
+                                               name="answer_text" 
+                                               value="Новый ответ"
+                                               required>
+                                    </div>
+
+                                    {% if question.test_q_type in [1, 2, 11, 21] %}
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               id="new_is_correct" 
+                                               name="is_correct">
+                                        <label class="form-check-label" for="new_is_correct">
+                                            Правильный ответ
+                                        </label>
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Комментарий модератора (только если модератор редактирует чужой тест) -->
+                                    {% if current_user.admin >= 1 and test.test_id_creator != current_user.id %}
+                                    <div class="mb-3">
+                                        <label for="moderator_comment_new" class="form-label">
+                                            <i class="bi bi-chat-left-text"></i> Комментарий для автора (опционально)
+                                        </label>
+                                        <textarea class="form-control" 
+                                                  id="moderator_comment_new" 
+                                                  name="moderator_comment" 
+                                                  rows="2"
+                                                  placeholder="Оставьте комментарий для автора теста..."></textarea>
+                                    </div>
+                                    {% endif %}
+
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-plus"></i> Добавить ответ
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if answers %}
+                    {% set total_answers = answers|length %}
+                    {% set correct_answers = answers|selectattr('test_a_is_correct')|list|length %}
+                    
+                    {% for answer in answers %}
+                    <div class="card mb-3 {% if answer.test_a_is_correct %}border-success{% endif %}">
+                        <div class="card-body">
+                            <form method="POST" 
+                                  action="{{ url_for('update_answer', answer_id=answer.test_a_id) }}"
+                                  {% if test.test_status == 2 and current_user.admin < 1 %}onsubmit="return confirm('Вы уверены? Тест будет отправлен на повторную проверку модератором.');"{% endif %}>
+                                
+                                <div class="mb-3">
+                                    <label for="answer_text_{{ answer.test_a_id }}" class="form-label">
+                                        Текст ответа
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="answer_text_{{ answer.test_a_id }}" 
+                                           name="answer_text" 
+                                           value="{{ answer.test_a_text }}"
+                                           required>
+                                </div>
+
+                                <!-- Чекбокс правильности ответа -->
+                                {% if question.test_q_type in [1, 2, 11, 21] %}
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           id="is_correct_{{ answer.test_a_id }}" 
+                                           name="is_correct"
+                                           {% if answer.test_a_is_correct %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_correct_{{ answer.test_a_id }}">
+                                        Правильный ответ
+                                    </label>
+                                </div>
+                                {% endif %}
+
+                                <!-- Комментарий модератора (только если модератор редактирует чужой тест) -->
+                                {% if current_user.admin >= 1 and test.test_id_creator != current_user.id %}
+                                <div class="mb-3">
+                                    <label for="moderator_comment_{{ answer.test_a_id }}" class="form-label">
+                                        <i class="bi bi-chat-left-text"></i> Комментарий для автора (опционально)
+                                    </label>
+                                    <textarea class="form-control" 
+                                              id="moderator_comment_{{ answer.test_a_id }}" 
+                                              name="moderator_comment" 
+                                              rows="2"
+                                              placeholder="Оставьте комментарий для автора теста..."></textarea>
+                                </div>
+                                {% endif %}
+
+                                <div class="btn-group w-100">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save"></i> Сохранить ответ
+                                    </button>
+                                    
+                                    {% set can_delete = true %}
+                                    {% set delete_reason = "" %}
+                                    
+                                    {# Проверка для типов 1, 2, 11, 21 #}
+                                    {% if question.test_q_type in [1, 2, 11, 21] %}
+                                        {% if total_answers <= 2 %}
+                                            {% set can_delete = false %}
+                                            {% set delete_reason = "Должно быть минимум 2 варианта ответа" %}
+                                        {% elif answer.test_a_is_correct and correct_answers <= 1 %}
+                                            {% set can_delete = false %}
+                                            {% set delete_reason = "Нельзя удалить последний правильный ответ" %}
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    {# Проверка для типов 3, 31 #}
+                                    {% if question.test_q_type in [3, 31] %}
+                                        {% if total_answers <= 1 %}
+                                            {% set can_delete = false %}
+                                            {% set delete_reason = "Должен быть хотя бы один правильный вариант" %}
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    {% if can_delete %}
+                                    <button type="button" 
+                                            class="btn btn-danger"
+                                            onclick="if(confirm('{% if test.test_status == 2 and current_user.admin < 1 %}Удалить этот ответ? Тест будет отправлен на повторную проверку модератором.{% else %}Удалить этот ответ?{% endif %}')) { document.getElementById('delete-form-{{ answer.test_a_id }}').submit(); }">
+                                        <i class="bi bi-trash"></i> Удалить
+                                    </button>
+                                    {% else %}
+                                    <button type="button" 
+                                            class="btn btn-secondary" 
+                                            disabled
+                                            title="{{ delete_reason }}">
+                                        <i class="bi bi-lock"></i> Нельзя удалить
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </form>
+
+                            <!-- Скрытая форма для удаления -->
+                            <form id="delete-form-{{ answer.test_a_id }}" 
+                                  method="POST" 
+                                  action="{{ url_for('delete_answer', answer_id=answer.test_a_id) }}"
+                                  style="display: none;">
+                            </form>
+                            
+                            {% if not can_delete %}
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> {{ delete_reason }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="alert alert-warning">
+                        У этого вопроса пока нет ответов.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mt-4 mb-4">
+                <a href="{{ url_for('edit_test_questions', test_id=test.test_id) }}" 
+                   class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Вернуться к списку вопросов
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

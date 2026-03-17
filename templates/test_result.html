@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Результаты теста: {{ test.test_name }}
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <!-- Результаты теста -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h1 class="card-title">Тест завершен!</h1>
+                    <h2 class="text-primary">{{ test.test_name }}</h2>
+                    
+                    <!-- Результат -->
+                    <div class="mt-4 mb-4">
+                        <div class="row">
+                            <div class="col-4">
+                                <h3 class="text-success">{{ result.correct_answers }}</h3>
+                                <p class="text-muted">правильных</p>
+                            </div>
+                            <div class="col-4">
+                                <h3 class="text-primary">{{ result.total_questions }}</h3>
+                                <p class="text-muted">всего</p>
+                            </div>
+                            <div class="col-4">
+                                <h3 class="
+                                    {% if result.percentage >= 80 %}text-success
+                                    {% elif result.percentage >= 60 %}text-warning
+                                    {% else %}text-danger
+                                    {% endif %}
+                                ">{{ result.percentage|round|int }}%</h3>
+                                <p class="text-muted">результат</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Прогресс-бар с результатом -->
+                    <div class="progress mb-4" style="height: 20px;">
+                        <div class="progress-bar 
+                            {% if result.percentage >= 80 %}bg-success
+                            {% elif result.percentage >= 60 %}bg-warning
+                            {% else %}bg-danger
+                            {% endif %}
+                        " role="progressbar" style="width: {{ result.percentage }}%">
+                            {{ result.percentage|round|int }}%
+                        </div>
+                    </div>
+                    
+                    <!-- Оценка результата -->
+                    <div class="alert 
+                        {% if result.percentage >= 80 %}alert-success
+                        {% elif result.percentage >= 60 %}alert-warning
+                        {% else %}alert-danger
+                        {% endif %}
+                    " role="alert">
+                        {% if result.percentage >= 80 %}
+                        <i class="bi bi-trophy"></i> Отличный результат!
+                        {% elif result.percentage >= 60 %}
+                        <i class="bi bi-check-circle"></i> Хороший результат!
+                        {% else %}
+                        <i class="bi bi-x-circle"></i> Попробуйте еще раз!
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Форма оценки теста -->
+            <div class="card">
+                <div class="card-body">
+                    {% if existing_score %}
+                    <h5 class="card-title text-center">Изменить оценку теста</h5>
+                    <p class="text-center text-muted">Ваша текущая оценка: <strong>{{ existing_score.test_s_score }} из 5</strong></p>
+                    <p class="text-center text-muted">Вы можете изменить свою оценку</p>
+                    {% else %}
+                    <h5 class="card-title text-center">Оцените тест</h5>
+                    <p class="text-center text-muted">Ваша оценка поможет другим пользователям</p>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('rate_test', test_name=test.test_name) }}" id="rating-form"
+                          onsubmit="return confirm('{% if existing_score %}Обновить оценку и завершить тест?{% else %}Отправить оценку и завершить тест?{% endif %}');">
+                        <div class="text-center mb-4">
+                            <div class="rating-stars">
+                                {% for i in range(1, 6) %}
+                                <input type="radio" name="score" value="{{ i }}" id="star{{ i }}" 
+                                       {% if existing_score and existing_score.test_s_score == i %}checked{% endif %} required>
+                                <label for="star{{ i }}" class="star-label" data-rating="{{ i }}">
+                                    ★
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div class="rating-text mt-2">
+                                {% if existing_score %}
+                                <small class="text-warning">
+                                    {% if existing_score.test_s_score == 1 %}Очень плохо
+                                    {% elif existing_score.test_s_score == 2 %}Плохо
+                                    {% elif existing_score.test_s_score == 3 %}Нормально
+                                    {% elif existing_score.test_s_score == 4 %}Хорошо
+                                    {% elif existing_score.test_s_score == 5 %}Отлично
+                                    {% endif %}
+                                </small>
+                                {% else %}
+                                <small class="text-muted">Нажмите на звездочки для оценки</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submit-rating" 
+                                    {% if not existing_score %}disabled{% endif %}>
+                                <i class="bi bi-send"></i> 
+                                {% if existing_score %}
+                                Обновить оценку и завершить
+                                {% else %}
+                                Отправить оценку и завершить
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rating-stars {
+    display: inline-flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+.rating-stars input[type="radio"] {
+    display: none;
+}
+
+.star-label {
+    font-size: 2.5rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    user-select: none;
+}
+
+.star-label.active {
+    color: #ffc107;
+}
+
+.star-label:hover {
+    color: #ffc107;
+}
+</style>
+
+<script>
+// Упрощенный JavaScript - только для звездочек
+document.addEventListener('DOMContentLoaded', function() {
+    const ratingInputs = document.querySelectorAll('input[name="score"]');
+    const submitBtn = document.getElementById('submit-rating');
+    const ratingText = document.querySelector('.rating-text small');
+    const starLabels = document.querySelectorAll('.star-label');
+    
+    const ratingTexts = {
+        1: 'Очень плохо', 2: 'Плохо', 3: 'Нормально', 4: 'Хорошо', 5: 'Отлично'
+    };
+    
+    // Функция подсветки звездочек
+    function highlightStars(rating) {
+        starLabels.forEach((label, index) => {
+            label.classList.toggle('active', index < rating);
+        });
+    }
+    
+    // Инициализация - подсвечиваем предустановленную оценку
+    const checkedInput = document.querySelector('input[name="score"]:checked');
+    if (checkedInput) {
+        highlightStars(parseInt(checkedInput.value));
+    }
+    
+    // Обработчики для звездочек
+    starLabels.forEach((label, index) => {
+        const rating = index + 1;
+        
+        label.addEventListener('mouseenter', () => highlightStars(rating));
+        
+        label.addEventListener('mouseleave', () => {
+            const checked = document.querySelector('input[name="score"]:checked');
+            highlightStars(checked ? parseInt(checked.value) : 0);
+        });
+        
+        label.addEventListener('click', () => {
+            document.getElementById(`star${rating}`).checked = true;
+            submitBtn.disabled = false;
+            ratingText.textContent = ratingTexts[rating];
+            ratingText.className = 'text-warning';
+            highlightStars(rating);
+        });
+    });
+    
+    // Обработка изменения радиокнопок
+    ratingInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            submitBtn.disabled = false;
+            ratingText.textContent = ratingTexts[this.value];
+            ratingText.className = 'text-warning';
+            highlightStars(parseInt(this.value));
+        });
+    });
+});
+</script>
+{% endblock %}

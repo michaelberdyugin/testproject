@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Редактирование теста: {{ test.test_name }}
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <a href="/workshop" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> В мастерскую
+                </a>
+                <h2 class="mb-0">Редактирование теста</h2>
+                <div style="width: 150px;"></div> <!-- Spacer -->
+            </div>
+            
+            {% if test.test_status == 2 and current_user.admin < 1 %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>Внимание!</strong> Этот тест опубликован. При внесении любых изменений тест будет отправлен на повторную проверку модератором.
+            </div>
+            {% endif %}
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3>Основная информация</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('update_test', test_id=test.test_id) }}" enctype="multipart/form-data"
+                          {% if test.test_status == 2 and current_user.admin < 1 %}onsubmit="return confirm('Вы уверены? Тест будет отправлен на повторную проверку модератором.');"{% endif %}>
+                        <!-- Название теста -->
+                        <div class="mb-3">
+                            <label for="test_name" class="form-label">Название теста</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="test_name" 
+                                   name="test_name" 
+                                   value="{{ test.test_name }}"
+                                   required>
+                            <div class="form-text">Разрешены: русские и английские буквы, цифры, пробелы, дефис и подчеркивание</div>
+                        </div>
+
+                        <!-- Описание теста -->
+                        <div class="mb-3">
+                            <label for="test_description" class="form-label">Описание теста</label>
+                            <textarea class="form-control" 
+                                      id="test_description" 
+                                      name="test_description" 
+                                      rows="4"
+                                      required>{{ test.test_description }}</textarea>
+                        </div>
+
+                        <!-- Текущее изображение -->
+                        {% if test.test_image %}
+                        <div class="mb-3">
+                            <label class="form-label">Текущее изображение</label>
+                            <div>
+                                <img src="{{ url_for('static', filename='img/' + test.test_image) }}"
+                                     alt="{{ test.test_name }}"
+                                     class="img-fluid"
+                                     style="max-height: 200px;">
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Новое изображение -->
+                        <div class="mb-3">
+                            <label for="test_image" class="form-label">
+                                {% if test.test_image %}Заменить изображение{% else %}Добавить изображение{% endif %}
+                            </label>
+                            <input type="file" 
+                                   class="form-control" 
+                                   id="test_image" 
+                                   name="test_image"
+                                   accept="image/*">
+                            <div class="form-text">Разрешены: PNG, JPG, JPEG, GIF, WEBP (макс. 16 МБ)</div>
+                        </div>
+
+                        <!-- Комментарий модератора (только если модератор редактирует чужой тест) -->
+                        {% if current_user.admin >= 1 and test.test_id_creator != current_user.id %}
+                        <div class="mb-3">
+                            <label for="moderator_comment" class="form-label">
+                                <i class="bi bi-chat-left-text"></i> Комментарий для создателя теста (необязательно)
+                            </label>
+                            <textarea class="form-control" 
+                                      id="moderator_comment" 
+                                      name="moderator_comment" 
+                                      rows="3"
+                                      placeholder="Оставьте комментарий, если хотите объяснить внесенные изменения..."></textarea>
+                            <div class="form-text">Создатель теста получит уведомление с вашим комментарием</div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Информация о тесте -->
+                        <div class="alert alert-info">
+                            <strong>Статус теста:</strong> 
+                            {% if test.test_status == 0 %}В разработке
+                            {% elif test.test_status == 1 %}На проверке
+                            {% elif test.test_status == 2 %}Опубликован
+                            {% endif %}
+                            <br>
+                            <strong>ID создателя:</strong> {{ test.test_id_creator }}
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Сохранить изменения
+                            </button>
+                            <a href="{{ url_for('edit_test_questions', test_id=test.test_id) }}" 
+                               class="btn btn-success">
+                                <i class="bi bi-list-ul"></i> Редактировать вопросы
+                            </a>
+                            <a href="/tests" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Вернуться к тестам
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Комментарии модераторов -->
+            {% if comments %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h4><i class="bi bi-chat-left-text"></i> Комментарии модераторов</h4>
+                </div>
+                <div class="card-body">
+                    {% for comment in comments %}
+                    <div class="alert alert-secondary">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>Модератор (ID: {{ comment.tc_user_id }})</strong>
+                                <small class="text-muted d-block">{{ comment.tc_created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <p class="mb-0">{{ comment.tc_comment }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

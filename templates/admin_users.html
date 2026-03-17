@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Пользователи — Администратор{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="/admin" class="btn btn-outline-secondary btn-sm me-2">
+                <i class="bi bi-arrow-left"></i> В панель
+            </a>
+            <span class="fs-4 fw-semibold">Пользователи</span>
+        </div>
+        <span class="text-muted">Всего: {{ users|length }}</span>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endwith %}
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Имя пользователя</th>
+                    <th>Email</th>
+                    <th>Статус</th>
+                    <th>Подтверждён</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% if user.admin == 2 %}
+                        <span class="badge bg-danger">Администратор</span>
+                        {% elif user.admin == 1 %}
+                        <span class="badge bg-warning text-dark">Модератор</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Пользователь</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.email_confirmed %}
+                        <span class="badge bg-success">Да</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Нет</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#renameModal{{ user.id }}">
+                                <i class="bi bi-pencil"></i> Имя
+                            </button>
+                            {% if user.id != current_user.id %}
+                            <button class="btn btn-sm btn-outline-warning"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#statusModal{{ user.id }}">
+                                <i class="bi bi-shield"></i> Статус
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Модальное окно: изменить имя -->
+                <div class="modal fade" id="renameModal{{ user.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Изменить имя: {{ user.username }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form method="POST" action="{{ url_for('admin_update_username', user_id=user.id) }}">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Новое имя пользователя</label>
+                                        <input type="text" class="form-control" name="username"
+                                               value="{{ user.username }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Причина изменения (опционально)</label>
+                                        <textarea class="form-control" name="reason" rows="2"
+                                                  placeholder="Укажите причину..."></textarea>
+                                    </div>
+                                    <div class="alert alert-info mb-0">
+                                        <i class="bi bi-info-circle"></i>
+                                        Пользователь получит уведомление об изменении имени.
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Модальное окно: изменить статус -->
+                {% if user.id != current_user.id %}
+                <div class="modal fade" id="statusModal{{ user.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Изменить статус: {{ user.username }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form method="POST" action="{{ url_for('admin_update_status', user_id=user.id) }}">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Новый статус</label>
+                                        <select class="form-select" name="admin_status" required>
+                                            <option value="0" {% if user.admin == 0 %}selected{% endif %}>Пользователь</option>
+                                            <option value="1" {% if user.admin == 1 %}selected{% endif %}>Модератор</option>
+                                            <option value="2" {% if user.admin == 2 %}selected{% endif %}>Администратор</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Причина изменения (опционально)</label>
+                                        <textarea class="form-control" name="reason" rows="2"
+                                                  placeholder="Укажите причину..."></textarea>
+                                    </div>
+                                    <div class="alert alert-info mb-0">
+                                        <i class="bi bi-info-circle"></i>
+                                        Пользователь получит уведомление об изменении статуса.
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                    <button type="submit" class="btn btn-warning">Изменить статус</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

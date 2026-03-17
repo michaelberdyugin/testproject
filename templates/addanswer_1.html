@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Добавить ответ
+{% endblock %}
+
+{% block main %}
+<div class="container mt-5">
+    <h3 class="mb-4">Добавить ответ к вопросу</h3>
+
+    <div class="alert alert-info">
+        <strong>Вопрос:</strong> {{ question.test_q_text }}
+    </div>
+
+    <form method="POST">
+        <div class="mb-3">
+            <textarea name="answer_text" class="form-control" rows="3"
+                      placeholder="Текст ответа" required></textarea>
+        </div>
+
+        <div class="form-check mb-3">
+            <input type="checkbox" name="is_correct" class="form-check-input" id="is_correct">
+            <label class="form-check-label" for="is_correct">Это правильный ответ</label>
+        </div>
+
+        <div class="d-flex gap-3">
+            <button type="submit" class="btn btn-success">Добавить ответ</button>
+            <a href="/createnext" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

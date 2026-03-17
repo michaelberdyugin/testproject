@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Панель модератора
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <h1>Панель модератора</h1>
+    <p class="lead">Добро пожаловать в панель модератора, {{ current_user.username }}!</p>
+    <hr>
+    <p>Здесь вы можете управлять контентом сайта.</p>
+    <div class="d-grid gap-2">
+        <a href="/moderator_2" class="btn btn-primary">Посмотреть тесты на проверке</a>
+        <a href="/moderator/manage" class="btn btn-warning">Управление всеми тестами</a>
+    </div>
+</div>
+
+{% endblock %}

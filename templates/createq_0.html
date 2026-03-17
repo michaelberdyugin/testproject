@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Выберите тип вопроса
+{% endblock %}
+
+{% block menu %}
+
+{% endblock %}
+
+{% block main %}
+
+<div class="container mt-5" style="max-width: 600px;">
+    <h2 class="text-center mb-4">Выберите тип вопроса</h2>
+
+    <form method="POST" class="mx-auto">
+        <div class="list-group mb-4">
+            <label class="list-group-item d-flex align-items-start">
+                <input class="form-check-input me-3" type="radio" name="question_type" value="1" checked>
+                <div>
+                    <div class="fw-bold">Выбор одного ответа</div>
+                    <small class="text-muted">
+                        Один правильный ответ из нескольких вариантов.
+                    </small>
+                </div>
+            </label>
+            <label class="list-group-item d-flex align-items-start">
+                <input class="form-check-input me-3" type="radio" name="question_type" value="2">
+                <div>
+                    <div class="fw-bold">Выбор нескольких ответов</div>
+                    <small class="text-muted">
+                        Несколько правильных ответов из нескольких вариантов.
+                    </small>
+                </div>
+            </label>
+            <label class="list-group-item d-flex align-items-start">
+                <input class="form-check-input me-3" type="radio" name="question_type" value="3">
+                <div>
+                    <div class="fw-bold">Ввод ответа вручную</div>
+                    <small class="text-muted">
+                        Пользователь должен ввести один из правильных ответов.
+                    </small>
+                </div>
+            </label>
+        </div>
+
+        <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" name="add_image" id="add_image">
+            <label class="form-check-label" for="add_image">
+                Добавить картинку к вопросу
+            </label>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <a href="/createnext" class="btn btn-outline-secondary">Назад</a>
+            <button type="submit" class="btn btn-primary">Продолжить</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
