@@ -28,9 +28,11 @@
                                 <option value="1">Выбор одного ответа</option>
                                 <option value="2">Выбор нескольких ответов</option>
                                 <option value="3">Ручной ввод ответа</option>
+                                <option value="4">Перетаскивание (сопоставление)</option>
                                 <option value="11">Выбор одного ответа (с изображением)</option>
                                 <option value="21">Выбор нескольких ответов (с изображением)</option>
                                 <option value="31">Ручной ввод ответа (с изображением)</option>
+                                <option value="41">Перетаскивание (с изображением)</option>
                             </select>
                         </div>
 
@@ -116,6 +118,38 @@
                             </div>
                         </div>
 
+                        <!-- Первая пара для типов 4, 41 -->
+                        <div id="matching_section" style="display: none;">
+                            <h5 class="mt-4">Пары (минимум 2)</h5>
+                            <p class="text-muted small">Строка — то, к чему перетаскивают. Блок — то, что перетаскивают.</p>
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <label class="form-label">Пара 1</label>
+                                    <div class="row g-2">
+                                        <div class="col">
+                                            <input type="text" class="form-control" name="row_text" placeholder="Строка 1" value="Строка 1">
+                                        </div>
+                                        <div class="col">
+                                            <input type="text" class="form-control" name="block_text" placeholder="Блок 1" value="Блок 1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <label class="form-label">Пара 2</label>
+                                    <div class="row g-2">
+                                        <div class="col">
+                                            <input type="text" class="form-control" name="row_text2" placeholder="Строка 2" value="Строка 2">
+                                        </div>
+                                        <div class="col">
+                                            <input type="text" class="form-control" name="block_text2" placeholder="Блок 2" value="Блок 2">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" class="btn btn-success w-100">
                             <i class="bi bi-plus-circle"></i> Создать вопрос
                         </button>
@@ -140,22 +174,23 @@ document.getElementById('question_type').addEventListener('change', function() {
     const imageSection = document.getElementById('image_upload_section');
     const answersSection = document.getElementById('answers_section');
     const manualSection = document.getElementById('manual_answer_section');
+    const matchingSection = document.getElementById('matching_section');
     
-    // Показываем загрузку изображения для типов 11, 21, 31
-    if ([11, 21, 31].includes(type)) {
-        imageSection.style.display = 'block';
-    } else {
-        imageSection.style.display = 'none';
-    }
+    // Показываем загрузку изображения для типов 11, 21, 31, 41
+    imageSection.style.display = [11, 21, 31, 41].includes(type) ? 'block' : 'none';
     
-    // Показываем варианты ответов для типов 1, 2, 11, 21
     if ([1, 2, 11, 21].includes(type)) {
         answersSection.style.display = 'block';
         manualSection.style.display = 'none';
-    } else {
-        // Показываем ручной ввод для типов 3, 31
+        matchingSection.style.display = 'none';
+    } else if ([3, 31].includes(type)) {
         answersSection.style.display = 'none';
         manualSection.style.display = 'block';
+        matchingSection.style.display = 'none';
+    } else if ([4, 41].includes(type)) {
+        answersSection.style.display = 'none';
+        manualSection.style.display = 'none';
+        matchingSection.style.display = 'block';
     }
 });
 </script>

@@ -24,6 +24,10 @@ v git config --global user.name "michaelberdyugin"{% extends 'base.html' %}
                 <span class="badge bg-success mb-3">
                     ✅ Есть минимум один правильный ответ, можно переходить к созданию следующего вопроса
                 </span>
+            {% elif last_question.test_q_type in [4, 41] %}
+                <span class="badge bg-success mb-3">
+                    ✅ Есть минимум две пары, можно переходить к созданию следующего вопроса
+                </span>
             {% else %}
                 <span class="badge bg-success mb-3">
                     ✅ Есть минимум два варианта ответа, можно переходить к созданию следующего вопроса
@@ -33,6 +37,10 @@ v git config --global user.name "michaelberdyugin"{% extends 'base.html' %}
             {% if last_question.test_q_type in [3, 31] %}
                 <span class="badge bg-danger mb-3">
                     ❌ Нет ни одного правильного ответа, добавьте хотя бы один!
+                </span>
+            {% elif last_question.test_q_type in [4, 41] %}
+                <span class="badge bg-danger mb-3">
+                    ❌ Имеется всего 1 пара, добавьте хотя бы ещё одну!
                 </span>
             {% else %}
                 <span class="badge bg-danger mb-3">
@@ -61,6 +69,10 @@ v git config --global user.name "michaelberdyugin"{% extends 'base.html' %}
         {% else %}
             {% if last_question.test_q_type in [3, 31] %}
                 <button class="btn btn-primary btn-lg px-5" disabled title="Сначала добавьте хотя бы один правильный ответ!">
+                    ➕ Создать вопрос
+                </button>
+            {% elif last_question.test_q_type in [4, 41] %}
+                <button class="btn btn-primary btn-lg px-5" disabled title="Сначала добавьте хотя бы две пары!">
                     ➕ Создать вопрос
                 </button>
             {% else %}
@@ -94,6 +106,14 @@ v git config --global user.name "michaelberdyugin"{% extends 'base.html' %}
             {% elif last_question.test_q_type == 31 %}
                 <a href="/addanswer_31" class="btn btn-success btn-lg px-5">
                     💬 Добавить правильный ответ
+                </a>
+            {% elif last_question.test_q_type == 4 %}
+                <a href="/addanswer_4" class="btn btn-success btn-lg px-5">
+                    💬 Добавить пару
+                </a>
+            {% elif last_question.test_q_type == 41 %}
+                <a href="/addanswer_41" class="btn btn-success btn-lg px-5">
+                    💬 Добавить пару
                 </a>
             {% else %}
                 <button class="btn btn-success btn-lg px-5" disabled

@@ -19,9 +19,11 @@
                         {% if question.test_q_type == 1 %}Выбор одного ответа
                         {% elif question.test_q_type == 2 %}Выбор нескольких ответов
                         {% elif question.test_q_type == 3 %}Ручной ввод
+                        {% elif question.test_q_type == 4 %}Перетаскивание (сопоставление)
                         {% elif question.test_q_type == 11 %}Выбор одного ответа (с изображением)
                         {% elif question.test_q_type == 21 %}Выбор нескольких ответов (с изображением)
                         {% elif question.test_q_type == 31 %}Ручной ввод (с изображением)
+                        {% elif question.test_q_type == 41 %}Перетаскивание (с изображением)
                         {% endif %}
                     </div>
                     
@@ -44,6 +46,9 @@
                             <li>Минимум <strong>1 правильный вариант ответа</strong></li>
                             <li>Нельзя удалить последний ответ</li>
                             <li>Все ответы считаются правильными вариантами</li>
+                            {% elif question.test_q_type in [4, 41] %}
+                            <li>Минимум <strong>2 пары</strong> (строка — блок)</li>
+                            <li>Нельзя удалить последние 2 пары</li>
                             {% endif %}
                         </ul>
                     </div>
@@ -77,7 +82,7 @@
                         {% endif %}
 
                         <!-- Новое изображение -->
-                        {% if question.test_q_type in [11, 21, 31] %}
+                        {% if question.test_q_type in [11, 21, 31, 41] %}
                         <div class="mb-3">
                             <label for="question_image" class="form-label">
                                 {% if question.test_q_image %}Заменить изображение{% else %}Добавить изображение{% endif %}
@@ -122,6 +127,8 @@
                         Минимум 2 варианта ответа, из них хотя бы 1 правильный
                         {% elif question.test_q_type in [3, 31] %}
                         Минимум 1 правильный вариант ответа
+                        {% elif question.test_q_type in [4, 41] %}
+                        Минимум 2 пары (строка — блок)
                         {% endif %}
                     </small>
                 </div>
@@ -145,6 +152,16 @@
                                       action="{{ url_for('add_answer', question_id=question.test_q_id) }}"
                                       {% if test.test_status == 2 and current_user.admin < 1 %}onsubmit="return confirm('Вы уверены? Тест будет отправлен на повторную проверку модератором.');"{% endif %}>
                                     
+                                    {% if question.test_q_type in [4, 41] %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Строка</label>
+                                        <input type="text" class="form-control" name="row_text" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Блок</label>
+                                        <input type="text" class="form-control" name="answer_text" required>
+                                    </div>
+                                    {% else %}
                                     <div class="mb-3">
                                         <label for="new_answer_text" class="form-label">Текст ответа</label>
                                         <input type="text" 
@@ -166,6 +183,7 @@
                                         </label>
                                     </div>
                                     {% endif %}
+                                    {% endif %}
 
                                     <!-- Комментарий модератора (только если модератор редактирует чужой тест) -->
                                     {% if current_user.admin >= 1 and test.test_id_creator != current_user.id %}
@@ -182,7 +200,7 @@
                                     {% endif %}
 
                                     <button type="submit" class="btn btn-success w-100">
-                                        <i class="bi bi-plus"></i> Добавить ответ
+                                        <i class="bi bi-plus"></i> Добавить {% if question.test_q_type in [4, 41] %}пару{% else %}ответ{% endif %}
                                     </button>
                                 </form>
                             </div>
@@ -194,12 +212,22 @@
                     {% set correct_answers = answers|selectattr('test_a_is_correct')|list|length %}
                     
                     {% for answer in answers %}
-                    <div class="card mb-3 {% if answer.test_a_is_correct %}border-success{% endif %}">
+                    <div class="card mb-3 {% if answer.test_a_is_correct and question.test_q_type not in [4, 41] %}border-success{% endif %}">
                         <div class="card-body">
                             <form method="POST" 
                                   action="{{ url_for('update_answer', answer_id=answer.test_a_id) }}"
                                   {% if test.test_status == 2 and current_user.admin < 1 %}onsubmit="return confirm('Вы уверены? Тест будет отправлен на повторную проверку модератором.');"{% endif %}>
                                 
+                                {% if question.test_q_type in [4, 41] %}
+                                <div class="mb-2">
+                                    <label class="form-label">Строка</label>
+                                    <input type="text" class="form-control" name="row_text" value="{{ answer.test_a_match }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Блок</label>
+                                    <input type="text" class="form-control" name="answer_text" value="{{ answer.test_a_text }}" required>
+                                </div>
+                                {% else %}
                                 <div class="mb-3">
                                     <label for="answer_text_{{ answer.test_a_id }}" class="form-label">
                                         Текст ответа
@@ -224,6 +252,7 @@
                                         Правильный ответ
                                     </label>
                                 </div>
+                                {% endif %}
                                 {% endif %}
 
                                 <!-- Комментарий модератора (только если модератор редактирует чужой тест) -->
@@ -264,6 +293,14 @@
                                         {% if total_answers <= 1 %}
                                             {% set can_delete = false %}
                                             {% set delete_reason = "Должен быть хотя бы один правильный вариант" %}
+                                        {% endif %}
+                                    {% endif %}
+
+                                    {# Проверка для типов 4, 41 #}
+                                    {% if question.test_q_type in [4, 41] %}
+                                        {% if total_answers <= 2 %}
+                                            {% set can_delete = false %}
+                                            {% set delete_reason = "Должно быть минимум 2 пары" %}
                                         {% endif %}
                                     {% endif %}
                                     

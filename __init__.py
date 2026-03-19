@@ -24,6 +24,14 @@ def get_unread_notifications_count(user_id):
     """Возвращает количество непрочитанных уведомлений пользователя."""
     return Notifications.query.filter_by(n_user_id=user_id, n_is_read=False).count()
 
+@app.template_filter('shuffle_list')
+def shuffle_list_filter(lst):
+    """Возвращает перемешанную копию списка."""
+    import copy
+    result = copy.copy(list(lst))
+    random.shuffle(result)
+    return result
+
 app.config['MAIL_SERVER']='smtp.mail.ru'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = 'itcube.michael.berdyugin@mail.ru'
@@ -87,9 +95,11 @@ class Tests_questions(db.Model):
     # 1 — выбор одного ответа из нескольких вариантов
     # 2 — выбор нескольких ответов
     # 3 — ввод ответа вручную
+    # 4 — перетаскивание блоков к строкам (matching)
     # 11 — выбор одного ответа из нескольких вариантов с изображением
     # 21 — выбор нескольких ответов с изображением
     # 31 — ввод ответа вручную с изображением
+    # 41 — перетаскивание блоков к строкам с изображением
     test_q_type = db.Column(db.Integer, default=1)
     test_q_status = db.Column(db.Integer)
     test_q_image = db.Column(db.String)
@@ -99,7 +109,8 @@ class Tests_answers(db.Model):
     test_a_creator_id = db.Column(db.Integer)
     test_a_question_id = db.Column(db.Integer)
     test_a_test_id = db.Column(db.Integer)
-    test_a_text = db.Column(db.String)
+    test_a_text = db.Column(db.String)       # Текст блока (перетаскиваемый элемент)
+    test_a_match = db.Column(db.String)      # Для типа 4/41: текст строки, к которой относится блок
     test_a_status = db.Column(db.Integer)
     test_a_is_correct = db.Column(db.Boolean)
 
@@ -575,12 +586,16 @@ def createq_0():
         return redirect("/createq_2")
     elif final_type == 3:
         return redirect("/createq_3")
+    elif final_type == 4:
+        return redirect("/createq_4")
     elif final_type == 11:
         return redirect("/createq_11")
     elif final_type == 21:
         return redirect("/createq_21")
     elif final_type == 31:
         return redirect("/createq_31")
+    elif final_type == 41:
+        return redirect("/createq_41")
     else:
         flash("Выберите корректный тип вопроса.", "warning")
         return redirect("/createq_0")
@@ -1005,6 +1020,17 @@ def submit_test(test_name):
             # Проверяем, совпадает ли ответ с одним из правильных
             if any(user_answer == answer.test_a_text.strip().lower() for answer in correct_answers_list):
                 correct_answers += 1
+
+        elif question.test_q_type in [4, 41]:  # Перетаскивание (сопоставление)
+            pairs = Tests_answers.query.filter_by(test_a_question_id=question.test_q_id, test_a_status=2).all()
+            all_correct = True
+            for pair in pairs:
+                user_match = (request.form.get(f"match_{pair.test_a_id}") or "").strip()
+                if user_match != pair.test_a_match.strip():
+                    all_correct = False
+                    break
+            if pairs and all_correct:
+                correct_answers += 1
     
     # Вычисляем процент правильных ответов
     percentage = (correct_answers / total_questions * 100) if total_questions > 0 else 0
@@ -1107,46 +1133,6 @@ def rate_test(test_name):
     
     flash(flash_message, 'success')
     return redirect("/tests")
-    
-    correct_answers = 0
-    total_questions = len(questions)
-    
-    for question in questions:
-        question_key = f"question_{question.test_q_id}"
-        
-        if question.test_q_type in [1, 11]:  # Один правильный ответ (с изображением или без)
-            user_answer_id = request.form.get(question_key)
-            if user_answer_id:
-                answer = Tests_answers.query.get(int(user_answer_id))
-                if answer and answer.test_a_is_correct:
-                    correct_answers += 1
-        
-        elif question.test_q_type in [2, 21]:  # Несколько правильных ответов (с изображением или без)
-            user_answer_ids = request.form.getlist(question_key)
-            correct_answer_ids = [str(a.test_a_id) for a in Tests_answers.query.filter_by(
-                test_a_question_id=question.test_q_id,
-                test_a_is_correct=True
-            ).all()]
-            
-            if set(user_answer_ids) == set(correct_answer_ids):
-                correct_answers += 1
-        
-        elif question.test_q_type in [3, 31]:  # Ручной ввод (с изображением или без)
-            user_answer = (request.form.get(question_key) or "").strip().lower()
-            correct_answers_list = Tests_answers.query.filter_by(
-                test_a_question_id=question.test_q_id,
-                test_a_is_correct=True
-            ).all()
-            
-            # Проверяем, совпадает ли ответ с одним из правильных
-            if any(user_answer == answer.test_a_text.strip().lower() for answer in correct_answers_list):
-                correct_answers += 1
-    
-    # Вычисляем процент правильных ответов
-    percentage = (correct_answers / total_questions * 100) if total_questions > 0 else 0
-    
-    flash(f"Тест завершен! Правильных ответов: {correct_answers} из {total_questions} ({percentage:.1f}%)", 'success')
-    return redirect(f"/test/{test_name}")
 
 
 @app.route('/createq_1', methods=["GET", "POST"])  # ✅ Добавили POST
@@ -1299,7 +1285,7 @@ def createnext():
         test_a_question_id=last_question.test_q_id
     ).count()
     
-    # Для типов 3, 4, 31 (ручной ввод) достаточно 1 ответа, для остальных нужно минимум 2
+    # Для типов 3, 4, 31, 41 (ручной ввод / перетаскивание) достаточно 1 ответа, для остальных нужно минимум 2
     if last_question.test_q_type in [3, 31]:
         are_2_questions = answers_count >= 1
     else:
@@ -2124,6 +2110,13 @@ def update_answer(answer_id):
     
     answer_text = request.form.get('answer_text')
     is_correct = bool(request.form.get('is_correct'))
+
+    # Для типов 4/41 обновляем поле match
+    if question.test_q_type in [4, 41]:
+        row_text = (request.form.get('row_text') or "").strip()
+        if row_text:
+            answer.test_a_match = row_text
+        is_correct = True  # пары всегда правильные
     
     # Для типов 1, 2, 11, 21 - проверяем, что не убираем последний правильный ответ
     if question.test_q_type in [1, 2, 11, 21]:
@@ -2262,6 +2255,12 @@ def delete_answer(answer_id):
         if total_answers <= 1:
             flash("Нельзя удалить последний ответ! Должен быть хотя бы один правильный вариант ответа.", 'danger')
             return redirect(f"/edit-question/{question.test_q_id}")
+
+    # Для типов 4, 41 - нельзя удалить если останется меньше 2 пар
+    elif question.test_q_type in [4, 41]:
+        if total_answers <= 2:
+            flash("Нельзя удалить пару! Должно быть минимум 2 пары.", 'danger')
+            return redirect(f"/edit-question/{question.test_q_id}")
     
     # Удаляем ответ
     db.session.delete(answer)
@@ -2325,9 +2324,9 @@ def create_question(test_id):
         flash("Введите текст вопроса!", 'danger')
         return redirect(f"/add-question/{test_id}")
     
-    # Обработка изображения для типов 11, 21, 31
+    # Обработка изображения для типов 11, 21, 31, 41
     image_filename = None
-    if question_type in [11, 21, 31]:
+    if question_type in [11, 21, 31, 41]:
         if 'question_image' in request.files:
             file = request.files['question_image']
             if file and file.filename != '' and allowed_file(file.filename):
@@ -2395,6 +2394,31 @@ def create_question(test_id):
             test_a_is_correct=True
         )
         db.session.add(answer)
+
+    elif question_type in [4, 41]:
+        # Для перетаскивания — создаём минимум 2 пары
+        row_text = (request.form.get('row_text') or "").strip()
+        block_text = (request.form.get('block_text') or "").strip()
+        row_text2 = (request.form.get('row_text2') or "").strip()
+        block_text2 = (request.form.get('block_text2') or "").strip()
+
+        if not row_text or not block_text or not row_text2 or not block_text2:
+            db.session.delete(new_question)
+            db.session.commit()
+            flash("Для типа 'Перетаскивание' нужно заполнить минимум 2 пары!", 'danger')
+            return redirect(f"/add-question/{test_id}")
+
+        for rt, bt in [(row_text, block_text), (row_text2, block_text2)]:
+            pair = Tests_answers(
+                test_a_creator_id=current_user.id,
+                test_a_test_id=test_id,
+                test_a_question_id=new_question.test_q_id,
+                test_a_text=bt,
+                test_a_match=rt,
+                test_a_status=test.test_status,
+                test_a_is_correct=True
+            )
+            db.session.add(pair)
     
     # Если тест был опубликован, переводим его на проверку
     was_published = _revert_test_to_review(test, current_user)
@@ -2440,6 +2464,12 @@ def add_answer(question_id):
     # Для типов 3 и 31 (ручной ввод) все ответы автоматически правильные
     if question.test_q_type in [3, 31]:
         is_correct = True
+
+    # Для типов 4 и 41 (перетаскивание) все пары правильные
+    row_text = None
+    if question.test_q_type in [4, 41]:
+        is_correct = True
+        row_text = (request.form.get('row_text') or "").strip()
     
     # Создаем новый ответ
     new_answer = Tests_answers(
@@ -2447,6 +2477,7 @@ def add_answer(question_id):
         test_a_test_id=test.test_id,
         test_a_question_id=question_id,
         test_a_text=answer_text,
+        test_a_match=row_text,
         test_a_status=question.test_q_status,
         test_a_is_correct=is_correct
     )
@@ -2811,6 +2842,240 @@ def addanswer_21():
         current_test=current_test,
         last_question=last_question,
         are_2_questions=are_2_questions
+    )
+
+
+@app.route('/createq_4', methods=["GET", "POST"])
+@login_required
+def createq_4():
+    """Создание вопроса типа 4 — перетаскивание (сопоставление)."""
+    current_test = Tests.query.filter_by(
+        test_id_creator=current_user.id,
+        test_status=0
+    ).first()
+
+    if not current_test:
+        flash("Сначала создайте тест!", 'warning')
+        return redirect("/create")
+
+    if request.method == "GET":
+        return render_template("createq_4.html", current_test=current_test)
+
+    test_q = (request.form.get('test_question') or "").strip()
+    row_text = (request.form.get('row_text') or "").strip()
+    block_text = (request.form.get('block_text') or "").strip()
+
+    if not test_q:
+        flash("Введите текст вопроса!", 'warning')
+        return redirect("/createq_4")
+    if not row_text or not block_text:
+        flash("Введите текст строки и блока!", 'warning')
+        return redirect("/createq_4")
+
+    test_question = Tests_questions(
+        test_q_creator_id=current_user.id,
+        test_q_text=test_q,
+        test_q_test_id=current_test.test_id,
+        test_q_type=4,
+        test_q_status=0
+    )
+    db.session.add(test_question)
+    db.session.commit()
+
+    test_answer = Tests_answers(
+        test_a_text=block_text,
+        test_a_match=row_text,
+        test_a_creator_id=current_user.id,
+        test_a_test_id=current_test.test_id,
+        test_a_question_id=test_question.test_q_id,
+        test_a_status=0,
+        test_a_is_correct=True
+    )
+    db.session.add(test_answer)
+    db.session.commit()
+
+    flash("Вопрос создан. Добавьте остальные пары.", 'success')
+    return redirect("/createnext")
+
+
+@app.route('/createq_41', methods=["GET", "POST"])
+@login_required
+def createq_41():
+    """Создание вопроса типа 41 — перетаскивание с изображением."""
+    current_test = Tests.query.filter_by(
+        test_id_creator=current_user.id,
+        test_status=0
+    ).first()
+
+    if not current_test:
+        flash("Сначала создайте тест!", 'warning')
+        return redirect("/create")
+
+    if request.method == "GET":
+        return render_template("createq_41.html", current_test=current_test)
+
+    test_q = (request.form.get('test_question') or "").strip()
+    row_text = (request.form.get('row_text') or "").strip()
+    block_text = (request.form.get('block_text') or "").strip()
+
+    if not test_q:
+        flash("Введите текст вопроса!", 'warning')
+        return redirect("/createq_41")
+    if not row_text or not block_text:
+        flash("Введите текст строки и блока!", 'warning')
+        return redirect("/createq_41")
+
+    image_filename = None
+    if 'test_q_image' in request.files:
+        file = request.files['test_q_image']
+        if file and file.filename != '' and allowed_file(file.filename):
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            image_filename = f"{uuid.uuid4().hex}.{ext}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], image_filename))
+        elif file.filename != '':
+            flash("Недопустимый формат изображения.", "danger")
+            return redirect("/createq_41")
+
+    test_question = Tests_questions(
+        test_q_creator_id=current_user.id,
+        test_q_text=test_q,
+        test_q_test_id=current_test.test_id,
+        test_q_type=41,
+        test_q_status=0,
+        test_q_image=image_filename
+    )
+    db.session.add(test_question)
+    db.session.commit()
+
+    test_answer = Tests_answers(
+        test_a_text=block_text,
+        test_a_match=row_text,
+        test_a_creator_id=current_user.id,
+        test_a_test_id=current_test.test_id,
+        test_a_question_id=test_question.test_q_id,
+        test_a_status=0,
+        test_a_is_correct=True
+    )
+    db.session.add(test_answer)
+    db.session.commit()
+
+    flash("Вопрос создан. Добавьте остальные пары.", 'success')
+    return redirect("/createnext")
+
+
+@app.route('/addanswer_4', methods=["GET", "POST"])
+@login_required
+def addanswer_4():
+    """Добавление пар для вопросов типа 4 (перетаскивание)."""
+    current_test = Tests.query.filter_by(
+        test_id_creator=current_user.id,
+        test_status=0
+    ).first()
+
+    if not current_test:
+        flash("Тест не найден!", 'danger')
+        return redirect("/create")
+
+    last_question = Tests_questions.query.filter_by(
+        test_q_test_id=current_test.test_id
+    ).order_by(Tests_questions.test_q_id.desc()).first()
+
+    if not last_question or last_question.test_q_type != 4:
+        flash("Вопрос типа 4 не найден!", 'warning')
+        return redirect("/createnext")
+
+    answers_count = Tests_answers.query.filter_by(
+        test_a_question_id=last_question.test_q_id
+    ).count()
+
+    if request.method == "GET":
+        return render_template("addanswer_4.html", question=last_question, current_test=current_test)
+
+    row_text = (request.form.get('row_text') or "").strip()
+    block_text = (request.form.get('block_text') or "").strip()
+
+    if not row_text or not block_text:
+        flash("Введите текст строки и блока!", 'warning')
+        return redirect("/addanswer_4")
+
+    test_answer = Tests_answers(
+        test_a_text=block_text,
+        test_a_match=row_text,
+        test_a_creator_id=current_user.id,
+        test_a_test_id=current_test.test_id,
+        test_a_question_id=last_question.test_q_id,
+        test_a_status=0,
+        test_a_is_correct=True
+    )
+    db.session.add(test_answer)
+    db.session.commit()
+
+    answers_count = Tests_answers.query.filter_by(
+        test_a_question_id=last_question.test_q_id
+    ).count()
+
+    flash("Пара добавлена!", 'success')
+    return render_template(
+        "createnext.html",
+        current_test=current_test,
+        last_question=last_question,
+        are_2_questions=answers_count >= 2
+    )
+
+
+@app.route('/addanswer_41', methods=["GET", "POST"])
+@login_required
+def addanswer_41():
+    """Добавление пар для вопросов типа 41 (перетаскивание с изображением)."""
+    current_test = Tests.query.filter_by(
+        test_id_creator=current_user.id,
+        test_status=0
+    ).first()
+
+    if not current_test:
+        flash("Тест не найден!", 'danger')
+        return redirect("/create")
+
+    last_question = Tests_questions.query.filter_by(
+        test_q_test_id=current_test.test_id
+    ).order_by(Tests_questions.test_q_id.desc()).first()
+
+    if not last_question or last_question.test_q_type != 41:
+        flash("Вопрос типа 41 не найден!", 'warning')
+        return redirect("/createnext")
+
+    if request.method == "GET":
+        return render_template("addanswer_41.html", question=last_question, current_test=current_test)
+
+    row_text = (request.form.get('row_text') or "").strip()
+    block_text = (request.form.get('block_text') or "").strip()
+
+    if not row_text or not block_text:
+        flash("Введите текст строки и блока!", 'warning')
+        return redirect("/addanswer_41")
+
+    test_answer = Tests_answers(
+        test_a_text=block_text,
+        test_a_match=row_text,
+        test_a_creator_id=current_user.id,
+        test_a_test_id=current_test.test_id,
+        test_a_question_id=last_question.test_q_id,
+        test_a_status=0,
+        test_a_is_correct=True
+    )
+    db.session.add(test_answer)
+    db.session.commit()
+
+    answers_count = Tests_answers.query.filter_by(
+        test_a_question_id=last_question.test_q_id
+    ).count()
+
+    flash("Пара добавлена!", 'success')
+    return render_template(
+        "createnext.html",
+        current_test=current_test,
+        last_question=last_question,
+        are_2_questions=answers_count >= 2
     )
 
 

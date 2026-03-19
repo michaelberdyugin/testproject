@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавить пару{% endblock %}
+
+{% block main %}
+<div class="container mt-5" style="max-width: 600px;">
+    <h2 class="text-center mb-4">Добавить пару</h2>
+    <div class="alert alert-info">
+        <strong>Вопрос:</strong> {{ question.test_q_text }}
+    </div>
+    <p class="text-muted">Добавьте ещё одну пару строка — блок.</p>
+
+    <form method="POST" class="mx-auto">
+        <div class="mb-3">
+            <label for="row_text" class="form-label">Строка (к чему перетаскивают)</label>
+            <input type="text" class="form-control" id="row_text" name="row_text" required>
+        </div>
+        <div class="mb-3">
+            <label for="block_text" class="form-label">Блок (что перетаскивают)</label>
+            <input type="text" class="form-control" id="block_text" name="block_text" required>
+        </div>
+        <div class="d-flex justify-content-between">
+            <a href="/createnext" class="btn btn-outline-secondary">Назад</a>
+            <button type="submit" class="btn btn-primary">Добавить пару</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

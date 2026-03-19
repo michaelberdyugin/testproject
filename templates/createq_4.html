@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Создание вопроса — перетаскивание{% endblock %}
+
+{% block main %}
+<div class="container mt-5" style="max-width: 600px;">
+    <h2 class="text-center mb-4">Вопрос: перетаскивание</h2>
+    <div class="alert alert-info">
+        <strong>Тест:</strong> {{ current_test.test_name }}
+    </div>
+    <p class="text-muted">Укажите текст вопроса и первую пару (строка — блок). Остальные пары добавите после.</p>
+
+    <form method="POST" class="mx-auto">
+        <div class="mb-3">
+            <label for="test_question" class="form-label">Текст вопроса</label>
+            <textarea class="form-control" id="test_question" name="test_question" rows="3" required></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="row_text" class="form-label">Строка (к чему перетаскивают)</label>
+            <input type="text" class="form-control" id="row_text" name="row_text" required>
+        </div>
+        <div class="mb-3">
+            <label for="block_text" class="form-label">Блок (что перетаскивают)</label>
+            <input type="text" class="form-control" id="block_text" name="block_text" required>
+        </div>
+        <div class="d-flex justify-content-between">
+            <a href="/createq_0" class="btn btn-outline-secondary">Назад</a>
+            <button type="submit" class="btn btn-primary">Создать вопрос</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

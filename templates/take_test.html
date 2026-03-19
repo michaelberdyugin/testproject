@@ -83,6 +83,44 @@
                                    placeholder="Введите ваш ответ"
                                    required>
                         </div>
+
+                        <!-- Тип 4 и 41: перетаскивание (сопоставление) -->
+                        {% elif item.question.test_q_type in [4, 41] %}
+                        <div class="mt-3" data-dnd-question="{{ item.question.test_q_id }}" data-dnd-total="{{ item.answers|length }}">
+                            <p class="text-muted small">Перетащите блоки к нужным строкам:</p>
+                            <div class="row">
+                                <!-- Строки (зоны сброса) -->
+                                <div class="col-md-6">
+                                    <h6>Строки</h6>
+                                    {% for answer in item.answers %}
+                                    <div class="drop-zone border rounded p-2 mb-2 d-flex align-items-center justify-content-between"
+                                         data-row="{{ answer.test_a_match }}"
+                                         data-qid="{{ item.question.test_q_id }}"
+                                         style="min-height: 48px; background: #f8f9fa;">
+                                        <span class="text-muted me-2">{{ answer.test_a_match }}</span>
+                                        <div class="drop-target d-flex flex-wrap gap-1" style="min-width: 80px; min-height: 36px;"></div>
+                                        <input type="hidden" name="match_{{ answer.test_a_id }}" class="match-input" value="">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <!-- Блоки (перетаскиваемые элементы) -->
+                                <div class="col-md-6">
+                                    <h6>Блоки</h6>
+                                    <div id="blocks_{{ item.question.test_q_id }}" class="d-flex flex-wrap gap-2">
+                                        {% set shuffled = item.answers | shuffle_list %}
+                                        {% for answer in shuffled %}
+                                        <div class="draggable-block badge bg-primary p-2"
+                                             draggable="true"
+                                             data-block-text="{{ answer.test_a_text }}"
+                                             data-answer-id="{{ answer.test_a_id }}"
+                                             style="cursor: grab; font-size: 0.9rem;">
+                                            {{ answer.test_a_text }}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         {% endif %}
                     </div>
                 </div>
@@ -104,46 +142,103 @@
 </div>
 
 <script>
-// Упрощенный JavaScript - только прогресс-бар и предупреждения
 document.addEventListener('DOMContentLoaded', function() {
     const inputs = document.querySelectorAll('.question-input');
     const progressBar = document.getElementById('progress-bar');
     const totalQuestions = {{ questions_with_answers|length }};
-    
-    // Упрощенная функция обновления прогресса
+
+    // --- Drag-and-drop для типов 4/41 ---
+    document.querySelectorAll('.draggable-block').forEach(block => {
+        block.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('answerId', block.dataset.answerId);
+            block.style.opacity = '0.5';
+        });
+        block.addEventListener('dragend', e => {
+            block.style.opacity = '1';
+        });
+    });
+
+    document.querySelectorAll('.drop-zone').forEach(zone => {
+        zone.addEventListener('dragover', e => {
+            e.preventDefault();
+            zone.style.background = '#e8f4fd';
+        });
+        zone.addEventListener('dragleave', () => {
+            zone.style.background = '#f8f9fa';
+        });
+        zone.addEventListener('drop', e => {
+            e.preventDefault();
+            zone.style.background = '#f8f9fa';
+            const answerId = e.dataTransfer.getData('answerId');
+            const rowText = zone.dataset.row;
+            const qid = zone.dataset.qid;
+            const target = zone.querySelector('.drop-target');
+            const input = zone.querySelector('.match-input');
+
+            // Если в зоне уже есть блок — вернуть его в пул блоков
+            const existing = target.querySelector('.draggable-block');
+            if (existing) {
+                const blocksContainer = document.getElementById('blocks_' + qid);
+                if (blocksContainer) blocksContainer.appendChild(existing);
+                // Очистить старый hidden input той зоны, откуда блок был взят
+                // (он уже очищается ниже при установке нового)
+            }
+
+            // Если перетаскиваемый блок уже лежит в другой зоне — убрать его оттуда
+            const draggedBlock = document.querySelector(`.draggable-block[data-answer-id="${answerId}"]`);
+            if (draggedBlock) {
+                const prevZone = draggedBlock.closest('.drop-zone');
+                if (prevZone) {
+                    prevZone.querySelector('.match-input').value = '';
+                }
+                target.appendChild(draggedBlock);
+                draggedBlock.style.opacity = '1';
+                input.value = rowText;
+            }
+            updateProgress();
+        });
+    });
+
+    // --- Прогресс-бар ---
     function updateProgress() {
-        const answeredQuestions = new Set();
-        
-        // Проверяем все типы вопросов
+        const answered = new Set();
+
+        // Типы 1, 2, 3 и их варианты с изображением
         inputs.forEach(input => {
-            if ((input.type === 'radio' && input.checked) || 
+            if ((input.type === 'radio' && input.checked) ||
                 (input.type === 'text' && input.value.trim()) ||
                 (input.type === 'checkbox' && input.checked)) {
-                answeredQuestions.add(input.name);
+                answered.add(input.name);
             }
         });
-        
-        const progress = (answeredQuestions.size / totalQuestions) * 100;
+
+        // Типы 4/41: вопрос считается отвеченным, когда все пары заполнены
+        document.querySelectorAll('[data-dnd-question]').forEach(container => {
+            const qid = container.dataset.dndQuestion;
+            const total = parseInt(container.dataset.dndTotal);
+            const filled = container.querySelectorAll('.match-input');
+            let filledCount = 0;
+            filled.forEach(inp => { if (inp.value) filledCount++; });
+            if (filledCount >= total) answered.add('dnd_' + qid);
+        });
+
+        const progress = totalQuestions > 0 ? (answered.size / totalQuestions) * 100 : 0;
         progressBar.style.width = progress + '%';
         progressBar.textContent = Math.round(progress) + '%';
     }
-    
-    // Обновляем прогресс при изменениях
+
     inputs.forEach(input => {
         input.addEventListener('change', updateProgress);
         input.addEventListener('input', updateProgress);
     });
 
-    // Подтверждение при отправке + убираем предупреждение
     document.getElementById('test-form').addEventListener('submit', function(e) {
-        window.onbeforeunload = null; // Убираем предупреждение
-        
+        window.onbeforeunload = null;
         if (!confirm('Вы уверены, что хотите завершить тест? После отправки ответов изменить их будет нельзя.')) {
             e.preventDefault();
-            // Возвращаем предупреждение если отменили
-            window.addEventListener('beforeunload', function(e) {
-                e.preventDefault();
-                e.returnValue = 'Вы уверены, что хотите покинуть страницу? Прогресс прохождения теста будет потерян.';
+            window.addEventListener('beforeunload', function(ev) {
+                ev.preventDefault();
+                ev.returnValue = 'Вы уверены, что хотите покинуть страницу? Прогресс прохождения теста будет потерян.';
             });
         }
     });

@@ -80,9 +80,11 @@
                         {% if item.question.test_q_type == 1 %}Выбор одного ответа
                         {% elif item.question.test_q_type == 2 %}Выбор нескольких ответов
                         {% elif item.question.test_q_type == 3 %}Ручной ввод
+                        {% elif item.question.test_q_type == 4 %}Перетаскивание (сопоставление)
                         {% elif item.question.test_q_type == 11 %}Выбор одного ответа (с изображением)
                         {% elif item.question.test_q_type == 21 %}Выбор нескольких ответов (с изображением)
                         {% elif item.question.test_q_type == 31 %}Ручной ввод (с изображением)
+                        {% elif item.question.test_q_type == 41 %}Перетаскивание (с изображением)
                         {% endif %}
                     </p>
 
@@ -91,12 +93,20 @@
                         <h6>Ответы:</h6>
                         <ul class="list-group">
                             {% for answer in item.answers %}
+                            {% if item.question.test_q_type in [4, 41] %}
+                            <li class="list-group-item">
+                                <span class="text-muted">{{ answer.test_a_match }}</span>
+                                <i class="bi bi-arrow-right mx-1"></i>
+                                {{ answer.test_a_text }}
+                            </li>
+                            {% else %}
                             <li class="list-group-item {% if answer.test_a_is_correct %}list-group-item-success{% endif %}">
                                 {{ answer.test_a_text }}
                                 {% if answer.test_a_is_correct %}
                                 <span class="badge bg-success float-end">Правильный</span>
                                 {% endif %}
                             </li>
+                            {% endif %}
                             {% endfor %}
                         </ul>
                     </div>
