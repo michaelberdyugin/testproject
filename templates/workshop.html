@@ -112,6 +112,15 @@
                                            class="btn btn-outline-secondary">
                                             <i class="bi bi-pencil"></i> Редактировать
                                         </a>
+                                        <button type="button"
+                                                class="btn btn-outline-danger"
+                                                onclick="if(confirm('Удалить тест «{{ test.test_name }}»? Это действие нельзя отменить!')) { document.getElementById('delete-pending-{{ test.test_id }}').submit(); }">
+                                            <i class="bi bi-trash"></i> Удалить
+                                        </button>
+                                        <form id="delete-pending-{{ test.test_id }}"
+                                              method="POST"
+                                              action="{{ url_for('workshop_delete_test', test_id=test.test_id) }}"
+                                              style="display:none;"></form>
                                     </div>
                                 </div>
                             </div>
@@ -164,6 +173,15 @@
                                            class="btn btn-outline-secondary">
                                             <i class="bi bi-pencil"></i> Редактировать
                                         </a>
+                                        <button type="button"
+                                                class="btn btn-outline-danger"
+                                                onclick="if(confirm('Удалить тест «{{ test.test_name }}»? Он будет снят с публикации. Это действие нельзя отменить!')) { document.getElementById('delete-published-{{ test.test_id }}').submit(); }">
+                                            <i class="bi bi-trash"></i> Удалить
+                                        </button>
+                                        <form id="delete-published-{{ test.test_id }}"
+                                              method="POST"
+                                              action="{{ url_for('workshop_delete_test', test_id=test.test_id) }}"
+                                              style="display:none;"></form>
                                     </div>
                                 </div>
                             </div>

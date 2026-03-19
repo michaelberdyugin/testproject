@@ -1158,11 +1158,11 @@ def createq():
 
     if not test_q or not test_a:
         flash("Заполните вопрос и ответ!", 'warning')
-        return redirect("/createq")
+        return redirect("/createq_1")
 
     if not is_correct:
         flash("Укажите хотя бы один правильный ответ!", 'warning')
-        return redirect("/createq")
+        return redirect("/createq_1")
 
     # Создаём вопрос
     test_question = Tests_questions(
@@ -1633,6 +1633,48 @@ def delete_test():
 
     flash("Тест успешно удалён!", 'success')
     return redirect("/tests")
+
+
+@app.route('/workshop/delete-test/<int:test_id>', methods=["POST"])
+@login_required
+def workshop_delete_test(test_id):
+    """Удаляет тест любого статуса из мастерской (только свои тесты)."""
+    test = Tests.query.filter_by(test_id=test_id, test_id_creator=current_user.id).first()
+
+    if not test:
+        flash("Тест не найден!", 'danger')
+        return redirect("/workshop")
+
+    questions = Tests_questions.query.filter_by(test_q_test_id=test.test_id).all()
+
+    for question in questions:
+        Tests_answers.query.filter_by(test_a_question_id=question.test_q_id).delete()
+
+    for question in questions:
+        if question.test_q_image:
+            try:
+                img_path = os.path.join(app.config['UPLOAD_FOLDER'], question.test_q_image)
+                if os.path.exists(img_path):
+                    os.remove(img_path)
+            except Exception as e:
+                print(f"Ошибка при удалении изображения вопроса: {e}")
+        db.session.delete(question)
+
+    if test.test_image:
+        try:
+            img_path = os.path.join(app.config['UPLOAD_FOLDER'], test.test_image)
+            if os.path.exists(img_path):
+                os.remove(img_path)
+        except Exception as e:
+            print(f"Ошибка при удалении изображения теста: {e}")
+
+    Test_scores.query.filter_by(test_s_test_id=test.test_id).delete()
+    db.session.delete(test)
+    db.session.commit()
+
+    flash(f"Тест «{test.test_name}» удалён.", 'success')
+    return redirect("/workshop")
+
 
 @app.route('/moderator_1')
 @login_required
