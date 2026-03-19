@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Уведомления
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-bell"></i> Уведомления</h2>
+                {% if unread_count > 0 %}
+                <form method="POST" action="{{ url_for('mark_all_notifications_read') }}" style="display: inline;">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-check-all"></i> Отметить все как прочитанные
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+            {% if notifications %}
+            <div class="list-group">
+                {% for item in notifications %}
+                {% set notif = item.notification %}
+                {% set sender = item.sender %}
+                <div class="list-group-item {% if not notif.n_is_read %}list-group-item-primary{% endif %}">
+                    <div class="d-flex w-100 justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                {% if not notif.n_is_read %}
+                                <span class="badge bg-primary me-2">Новое</span>
+                                {% endif %}
+                                {% if sender %}
+                                <strong>От: {{ sender.username }}</strong>
+                                {% else %}
+                                <strong>Системное уведомление</strong>
+                                {% endif %}
+                                <small class="text-muted ms-2">{{ notif.n_created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                            </div>
+                            <p class="mb-2">{{ notif.n_text }}</p>
+                            {% if notif.n_link %}
+                            <a href="{{ notif.n_link }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-box-arrow-up-right"></i> Перейти
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% if not notif.n_is_read %}
+                        <form method="POST" action="{{ url_for('mark_notification_read', notification_id=notif.n_id) }}">
+                            <button type="submit" class="btn btn-sm btn-success" title="Отметить как прочитанное">
+                                <i class="bi bi-check"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center">
+                <i class="bi bi-inbox"></i>
+                <p class="mb-0">У вас пока нет уведомлений</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

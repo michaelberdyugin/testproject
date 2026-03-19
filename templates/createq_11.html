@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Создание вопроса
+{% endblock %}
+
+{% block menu %}
+{% endblock %}
+
+{% block main %}
+<div class="container">
+    <h2 class="text-center mb-4">Создание вопроса с выбором одного ответа и изображением</h2>
+
+    <form method="POST" enctype="multipart/form-data" class="mx-auto" style="max-width: 600px;">
+
+        <!-- Вопрос -->
+        <div class="mb-3">
+            <label class="form-label">Текст вопроса:</label>
+            <textarea name="test_question" class="form-control" rows="3"
+                      placeholder="Введите текст вопроса" required></textarea>
+        </div>
+
+        <!-- Изображение -->
+        <div class="mb-3">
+            <label class="form-label">Изображение к вопросу:</label>
+            <input type="file" name="test_q_image" class="form-control" accept="image/*">
+            <small class="text-muted">Разрешены форматы: png, jpg, jpeg, gif, webp</small>
+        </div>
+
+        <!-- Ответ -->
+        <div class="mb-3">
+            <label class="form-label">Текст ответа:</label>
+            <textarea name="test_answer" class="form-control" rows="2"
+                      placeholder="Введите текст ответа" required></textarea>
+        </div>
+
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="is_correct" id="is_correct">
+            <label class="form-check-label" for="is_correct">Правильный ответ</label>
+        </div>
+
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">Продолжить</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

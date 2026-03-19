@@ -1,0 +1,130 @@
+v git config --global user.name "michaelberdyugin"{% extends 'base.html' %}
+
+{% block title %}
+Что дальше?
+{% endblock %}
+
+{% block menu %}
+{% endblock %}
+
+{% block main %}
+
+<div class="container text-center mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="/workshop" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> В мастерскую
+        </a>
+        <h3 class="mb-0">Что вы хотите сделать?</h3>
+        <div style="width: 150px;"></div> <!-- Spacer for alignment -->
+    </div>
+    <!-- ✅ Индикатор наличия правильного ответа -->
+    {% if last_question %}
+        {% if are_2_questions %}
+            {% if last_question.test_q_type in [3, 31] %}
+                <span class="badge bg-success mb-3">
+                    ✅ Есть минимум один правильный ответ, можно переходить к созданию следующего вопроса
+                </span>
+            {% else %}
+                <span class="badge bg-success mb-3">
+                    ✅ Есть минимум два варианта ответа, можно переходить к созданию следующего вопроса
+                </span>
+            {% endif %}
+        {% else %}
+            {% if last_question.test_q_type in [3, 31] %}
+                <span class="badge bg-danger mb-3">
+                    ❌ Нет ни одного правильного ответа, добавьте хотя бы один!
+                </span>
+            {% else %}
+                <span class="badge bg-danger mb-3">
+                    ❌ Имеется всего 1 ответ, для создания нового вопроса создайте хотя-бы 2 варианта ответа!
+                </span>
+            {% endif %}
+        {% endif %}
+    {% endif %}
+</div>
+    <div class="d-flex flex-column gap-3 justify-content-center align-items-center">
+
+        <!-- Если нет вопросов вообще -->
+        {% if not last_question %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> У теста пока нет вопросов. Создайте первый вопрос!
+            </div>
+            <a href="/createq_0" class="btn btn-primary btn-lg px-5">
+                ➕ Создать первый вопрос
+            </a>
+        {% else %}
+        <!-- Кнопка 1: Создать ещё один вопрос -->
+        {% if are_2_questions %}
+            <a href="/createq_0" class="btn btn-primary btn-lg px-5">
+                ➕ Создать вопрос
+            </a>
+        {% else %}
+            {% if last_question.test_q_type in [3, 31] %}
+                <button class="btn btn-primary btn-lg px-5" disabled title="Сначала добавьте хотя бы один правильный ответ!">
+                    ➕ Создать вопрос
+                </button>
+            {% else %}
+                <button class="btn btn-primary btn-lg px-5" disabled title="Сначала создайте хотя-бы два ответа на этот вопрос!">
+                    ➕ Создать вопрос
+                </button>
+            {% endif %}
+        {% endif %}
+        <!-- Кнопка 2: Добавить ответ к текущему вопросу -->
+        {% if last_question %}
+            {% if last_question.test_q_type == 1 %}
+                <a href="/addanswer" class="btn btn-success btn-lg px-5">
+                    💬 Добавить ответ
+                </a>
+            {% elif last_question.test_q_type == 2 %}
+                <a href="/addanswer_2" class="btn btn-success btn-lg px-5">
+                    💬 Добавить ответ
+                </a>
+            {% elif last_question.test_q_type == 3 %}
+                <a href="/addanswer_3" class="btn btn-success btn-lg px-5">
+                    💬 Добавить правильный ответ
+                </a>
+            {% elif last_question.test_q_type == 11 %}
+                <a href="/addanswer_11" class="btn btn-success btn-lg px-5">
+                    💬 Добавить ответ
+                </a>
+            {% elif last_question.test_q_type == 21 %}
+                <a href="/addanswer_21" class="btn btn-success btn-lg px-5">
+                    💬 Добавить ответ
+                </a>
+            {% elif last_question.test_q_type == 31 %}
+                <a href="/addanswer_31" class="btn btn-success btn-lg px-5">
+                    💬 Добавить правильный ответ
+                </a>
+            {% else %}
+                <button class="btn btn-success btn-lg px-5" disabled
+                        title="Добавление ответов для этого типа вопросов ещё не реализовано.">
+                    💬 Добавить ответ
+                </button>
+            {% endif %}
+        {% endif %}
+
+        <!-- Кнопка 3: Завершить создание теста -->
+        {% if last_question and are_2_questions %}
+            <a href="/finish-test"
+               class="btn btn-secondary btn-lg px-5"
+               onclick="return confirm('✅ Вы уверены, что хотите завершить создание теста?');">
+                ✓ Завершить создание теста
+            </a>
+        {% endif %}
+        {% endif %}
+
+        <!-- Кнопка 4: Удалить тест -->
+        <hr class="my-4" style="width: 100%; max-width: 300px;">
+        <a href="/delete-test"
+           class="btn btn-danger btn-lg px-5"
+           onclick="return confirm('⚠️ Вы уверены, что хотите удалить этот тест?');">
+            🗑️ Удалить тест
+        </a>
+        <small class="text-danger">
+            ⚠️ Это действие нельзя отменить!
+        </small>
+
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Регистрация
+{% endblock %}
+
+{% block menu %}
+<ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+    <li><a href="/" class="nav-link px-2 text-secondary">Главная</a></li>
+    <li><a href="/add" class="nav-link px-2 text-secondary">Создать новость</a></li>
+</ul>
+{% endblock %}
+
+{% block main %}
+<section class="text-center container">
+    <div class="col-lg-6 col-md-8 mx-auto">
+        <h1>Регистрация</h1>
+        <form class="needs-validation" method="post">
+            <input type="text" name="username" id="username" class="form-control" placeholder="Введите логин"
+                   value="{{ pending_username or '' }}" required=""><br>
+            <input type="email" name="email" id="email" class="form-control" placeholder="Введите почту"
+                   value="{{ pending_email or '' }}" required=""><br>
+            <input type="password" name="password" id="password" class="form-control" placeholder="Введите пароль"
+                   required=""><br>
+            <input type="password" name="password2" id="password2" class="form-control" placeholder="Подтвердите пароль"
+                   required=""><br>
+            <input type="submit" class="btn btn-primary" value="Регистрация">
+        </form>
+    </div>
+</section>
+
+<!-- Modal: Email verification code -->
+<div class="modal fade" id="verifyModal" tabindex="-1" aria-labelledby="verifyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="verifyModalLabel">Подтверждение почты</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-start">
+        <p class="mb-2">Мы отправили код на почту: <b>{{ pending_email or '—' }}</b></p>
+
+        <form method="post" action="/registration">
+          <label for="verification_code" class="form-label">Код подтверждения</label>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                 name="verification_code" id="verification_code"
+                 class="form-control" placeholder="Введите 6-значный код" required>
+          <div class="mt-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Подтвердить</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          </div>
+        </form>
+
+        <hr class="my-3">
+
+        <form method="post" action="/registration/resend">
+          <button type="submit" class="btn btn-outline-primary">Отправить код повторно</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if show_modal %}
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('verifyModal');
+    if (!el) return;
+    var modal = new bootstrap.Modal(el);
+    modal.show();
+    var input = document.getElementById('verification_code');
+    if (input) input.focus();
+  });
+</script>
+{% endif %}
+
+{% endblock %}
+
+
+

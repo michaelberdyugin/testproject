@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Тесты на проверке
+{% endblock %}
+
+{% block main %}
+<h2 class="mb-4">Тесты на проверке</h2>
+{% if tests %}
+<div class="row g-3">
+  {% for test in tests %}
+  <!-- Карточка теста -->
+  <div class="col-md-3">
+  <div class="card card-fixed">
+    {% if test.test_image %}
+        <img src="{{ url_for('static', filename='img/' + test.test_image) }}"
+             class="card-img-top"
+             alt="{{ test.test_name }}">
+      {% else %}
+        <!-- Заглушка, если изображения нет -->
+        <img src="{{ url_for('static', filename='img/placeholder.png') }}"
+             class="card-img-top"
+             alt="Нет изображения">
+      {% endif %}
+
+    <div class="card-body">
+      <h5 class="card-name">{{test.test_name|truncate(80)}}</h5>
+      <p class="card-description">{{test.test_description|truncate(220)}}</p>
+      <a href="{{ url_for('moderator_review_test', test_name=test.test_name) }}" class="btn btn-primary">Проверить тест</a>
+    </div>
+  </div>
+  </div>
+{% endfor %}
+  {% else %}
+  <p>Тестов на проверке пока нет.</p>
+{% endif %}
+
+</div>
+{% endblock %}

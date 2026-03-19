@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ test.test_name }}
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- Информация о тесте -->
+            <div class="card mb-4">
+                {% if test.test_image %}
+                <img src="{{ url_for('static', filename='img/' + test.test_image) }}"
+                     class="card-img-top"
+                     alt="{{ test.test_name }}"
+                     style="max-height: 400px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h1 class="card-title">{{ test.test_name }}</h1>
+                    <p class="card-text">{{ test.test_description }}</p>
+                    
+                    <!-- Информация о тесте -->
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ questions_count }}</h3>
+                                <p class="text-muted">
+                                    {% if questions_count == 1 %}
+                                    вопрос
+                                    {% elif questions_count in [2, 3, 4] %}
+                                    вопроса
+                                    {% else %}
+                                    вопросов
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                {% if average_score > 0 %}
+                                <h3 class="text-warning">
+                                    {{ average_score }}
+                                    <span class="fs-6">/ 5</span>
+                                </h3>
+                                <p class="text-muted">средняя оценка</p>
+                                <small class="text-muted">({{ scores_count }} 
+                                    {% if scores_count == 1 %}
+                                    оценка
+                                    {% elif scores_count in [2, 3, 4] %}
+                                    оценки
+                                    {% else %}
+                                    оценок
+                                    {% endif %}
+                                )</small>
+                                {% else %}
+                                <h3 class="text-muted">—</h3>
+                                <p class="text-muted">пока нет оценок</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 class="text-info">~{{ (questions_count * 1.5)|round|int }} мин</h3>
+                                <p class="text-muted">примерное время</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Звездочки для отображения рейтинга -->
+                    {% if average_score > 0 %}
+                    <div class="text-center mt-3">
+                        {% for i in range(1, 6) %}
+                            {% if i <= average_score %}
+                                <i class="bi bi-star-fill text-warning"></i>
+                            {% elif i - 0.5 <= average_score %}
+                                <i class="bi bi-star-half text-warning"></i>
+                            {% else %}
+                                <i class="bi bi-star text-warning"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Информация о предыдущей оценке пользователя -->
+                    {% if current_user.is_authenticated and user_score %}
+                    <div class="alert alert-info mt-3" role="alert">
+                        <i class="bi bi-info-circle"></i>
+                        Вы уже оценили этот тест на <strong>{{ user_score.test_s_score }} из 5</strong>. 
+                        При повторном прохождении вы сможете изменить свою оценку.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Кнопки действий -->
+            <div class="d-grid gap-2 mb-4">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.current_test_id %}
+                        {% if current_user.current_test_id == test.test_id %}
+                        <a href="{{ url_for('take_test', test_name=test.test_name) }}" class="btn btn-success btn-lg">
+                            <i class="bi bi-play-circle"></i> Продолжить прохождение
+                        </a>
+                        {% else %}
+                        <div class="alert alert-warning" role="alert">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Вы уже проходите другой тест. Завершите его перед началом нового.
+                        </div>
+                        {% endif %}
+                    {% else %}
+                    <a href="{{ url_for('start_test', test_name=test.test_name) }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-play-circle"></i> Начать прохождение теста
+                    </a>
+                    {% endif %}
+                {% else %}
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i>
+                    Для прохождения теста необходимо <a href="/login">войти в систему</a> или <a href="/registration">зарегистрироваться</a>.
+                </div>
+                {% endif %}
+                
+                <!-- Кнопка удаления для модераторов и админов -->
+                {% if current_user.is_authenticated and current_user.admin >= 1 %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <a href="/tests" class="btn btn-secondary w-100">
+                            <i class="bi bi-arrow-left"></i> Вернуться к списку тестов
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <form method="POST" 
+                              action="{{ url_for('moderator_delete_any_test', test_name=test.test_name) }}" 
+                              onsubmit="return confirm('Вы уверены, что хотите удалить тест \'{{ test.test_name }}\'? Это действие нельзя отменить!');">
+                            <button type="submit" class="btn btn-danger w-100">
+                                <i class="bi bi-trash"></i> Удалить тест (модератор)
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <a href="/tests" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Вернуться к списку тестов
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

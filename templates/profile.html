@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Профиль{% endblock %}
+
+{% block main %}
+<div class="container mt-4" style="max-width: 560px;">
+    <h2 class="mb-4">Профиль</h2>
+
+    <div class="card">
+        <div class="card-body">
+
+            <!-- Имя -->
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div>
+                    <div class="text-muted small">Имя пользователя</div>
+                    <div class="fs-5">{{ current_user.username }}</div>
+                </div>
+                <button class="btn btn-link text-secondary p-1" data-bs-toggle="modal" data-bs-target="#usernameModal">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </div>
+
+            <!-- Почта -->
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div>
+                    <div class="text-muted small">Email</div>
+                    <div class="fs-5">{{ current_user.email }}</div>
+                </div>
+                <button class="btn btn-link text-secondary p-1" data-bs-toggle="modal" data-bs-target="#emailModal">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </div>
+
+            <!-- Пароль -->
+            <div class="d-flex justify-content-between align-items-center py-2">
+                <div>
+                    <div class="text-muted small">Пароль</div>
+                    <div class="fs-5">••••••••</div>
+                </div>
+                <button class="btn btn-link text-secondary p-1" data-bs-toggle="modal" data-bs-target="#passwordModal">
+                    <span class="small">Сменить пароль</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Настройки email-уведомлений -->
+    <div class="card mt-4">
+        <div class="card-header">Email-уведомления</div>
+        <div class="card-body">
+            <form method="POST" action="/profile/notification-settings">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="email_tests" id="emailTests"
+                           {% if settings is none or settings.uns_email_tests %}checked{% endif %}>
+                    <label class="form-check-label" for="emailTests">
+                        Уведомления о тестах (одобрение, правки модератора)
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="email_admin_messages" id="emailAdmin"
+                           {% if settings is none or settings.uns_email_admin_messages %}checked{% endif %}>
+                    <label class="form-check-label" for="emailAdmin">
+                        Сообщения от администратора
+                    </label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="email_account_changes" id="emailAccount"
+                           {% if settings is none or settings.uns_email_account_changes %}checked{% endif %}>
+                    <label class="form-check-label" for="emailAccount">
+                        Изменение имени или статуса администратором
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Сохранить настройки</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка: сменить имя -->
+<div class="modal fade" id="usernameModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Сменить имя пользователя</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/profile/update-username">
+                <div class="modal-body">
+                    <input type="text" class="form-control" name="username"
+                           value="{{ current_user.username }}" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка: сменить почту -->
+<div class="modal fade" id="emailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Сменить почту</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/profile/update-email">
+                <div class="modal-body">
+                    <input type="email" class="form-control" name="email"
+                           value="{{ current_user.email }}" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модалка: сменить пароль -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Сменить пароль</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/profile/update-password">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Текущий пароль</label>
+                        <input type="password" class="form-control" name="current_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Новый пароль</label>
+                        <input type="password" class="form-control" name="new_password" minlength="6" required>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">Повторите новый пароль</label>
+                        <input type="password" class="form-control" name="new_password2" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Изменить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

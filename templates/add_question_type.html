@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Добавить вопрос
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Добавить новый вопрос</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Тест:</strong> {{ test.test_name }}
+                    </div>
+
+                    <form method="POST" 
+                          action="{{ url_for('create_question', test_id=test.test_id) }}"
+                          enctype="multipart/form-data">
+                        
+                        <!-- Выбор типа вопроса -->
+                        <div class="mb-3">
+                            <label class="form-label">Тип вопроса</label>
+                            <select class="form-select" name="question_type" id="question_type" required>
+                                <option value="1">Выбор одного ответа</option>
+                                <option value="2">Выбор нескольких ответов</option>
+                                <option value="3">Ручной ввод ответа</option>
+                                <option value="11">Выбор одного ответа (с изображением)</option>
+                                <option value="21">Выбор нескольких ответов (с изображением)</option>
+                                <option value="31">Ручной ввод ответа (с изображением)</option>
+                            </select>
+                        </div>
+
+                        <!-- Текст вопроса -->
+                        <div class="mb-3">
+                            <label for="question_text" class="form-label">Текст вопроса</label>
+                            <textarea class="form-control" 
+                                      id="question_text" 
+                                      name="question_text" 
+                                      rows="3"
+                                      required></textarea>
+                        </div>
+
+                        <!-- Изображение вопроса (показывается для типов 11, 21, 31) -->
+                        <div class="mb-3" id="image_upload_section" style="display: none;">
+                            <label for="question_image" class="form-label">Изображение вопроса</label>
+                            <input type="file" 
+                                   class="form-control" 
+                                   id="question_image" 
+                                   name="question_image"
+                                   accept="image/*">
+                            <div class="form-text">Разрешены: PNG, JPG, JPEG, GIF, WEBP (макс. 16 МБ)</div>
+                        </div>
+
+                        <!-- Ответы для типов 1, 2, 11, 21 -->
+                        <div id="answers_section">
+                            <h5 class="mt-4">Варианты ответов</h5>
+                            <p class="text-muted small">Минимум 2 варианта, хотя бы один должен быть правильным</p>
+                            
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <label for="answer1_text" class="form-label">Вариант 1</label>
+                                    <input type="text" 
+                                           class="form-control mb-2" 
+                                           id="answer1_text" 
+                                           name="answer1_text" 
+                                           value="Вариант 1">
+                                    <div class="form-check">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               id="is_correct1" 
+                                               name="is_correct1">
+                                        <label class="form-check-label" for="is_correct1">
+                                            Правильный ответ
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <label for="answer2_text" class="form-label">Вариант 2</label>
+                                    <input type="text" 
+                                           class="form-control mb-2" 
+                                           id="answer2_text" 
+                                           name="answer2_text" 
+                                           value="Вариант 2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               id="is_correct2" 
+                                               name="is_correct2">
+                                        <label class="form-check-label" for="is_correct2">
+                                            Правильный ответ
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ответ для типов 3, 31 -->
+                        <div id="manual_answer_section" style="display: none;">
+                            <h5 class="mt-4">Правильный ответ</h5>
+                            <p class="text-muted small">Укажите правильный вариант ответа</p>
+                            
+                            <div class="mb-3">
+                                <label for="answer_text" class="form-label">Правильный ответ</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="answer_text" 
+                                       name="answer_text" 
+                                       value="Правильный ответ">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-plus-circle"></i> Создать вопрос
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mt-4 mb-4">
+                <a href="{{ url_for('edit_test_questions', test_id=test.test_id) }}" 
+                   class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Отмена
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Показываем/скрываем секции в зависимости от типа вопроса
+document.getElementById('question_type').addEventListener('change', function() {
+    const type = parseInt(this.value);
+    const imageSection = document.getElementById('image_upload_section');
+    const answersSection = document.getElementById('answers_section');
+    const manualSection = document.getElementById('manual_answer_section');
+    
+    // Показываем загрузку изображения для типов 11, 21, 31
+    if ([11, 21, 31].includes(type)) {
+        imageSection.style.display = 'block';
+    } else {
+        imageSection.style.display = 'none';
+    }
+    
+    // Показываем варианты ответов для типов 1, 2, 11, 21
+    if ([1, 2, 11, 21].includes(type)) {
+        answersSection.style.display = 'block';
+        manualSection.style.display = 'none';
+    } else {
+        // Показываем ручной ввод для типов 3, 31
+        answersSection.style.display = 'none';
+        manualSection.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

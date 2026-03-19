@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Сообщения — Администратор{% endblock %}
+
+{% block main %}
+<div class="container mt-4" style="max-width: 700px;">
+    <div class="mb-4">
+        <a href="/admin" class="btn btn-outline-secondary btn-sm me-2">
+            <i class="bi bi-arrow-left"></i> В панель
+        </a>
+        <span class="fs-4 fw-semibold">Отправить сообщение</span>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="/admin/messages/send">
+
+        <!-- Получатели -->
+        <div class="card mb-3">
+            <div class="card-header">Получатели</div>
+            <div class="card-body">
+                <div class="d-flex gap-3 mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="target" id="targetAll" value="all" checked>
+                        <label class="form-check-label" for="targetAll">Все пользователи</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="target" id="targetSingle" value="single">
+                        <label class="form-check-label" for="targetSingle">Один пользователь</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="target" id="targetMultiple" value="multiple">
+                        <label class="form-check-label" for="targetMultiple">Несколько</label>
+                    </div>
+                </div>
+
+                <!-- Один пользователь -->
+                <div id="singleBlock" style="display:none;">
+                    <label class="form-label">Пользователь</label>
+                    <select class="form-select" name="user_id">
+                        <option value="">— выберите —</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Несколько пользователей -->
+                <div id="multipleBlock" style="display:none;">
+                    <label class="form-label">Пользователи (можно выбрать несколько)</label>
+                    <select class="form-select" name="user_ids" multiple size="6">
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Удерживайте Ctrl для выбора нескольких</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Текст сообщения -->
+        <div class="mb-3">
+            <label class="form-label">Текст сообщения</label>
+            <textarea class="form-control" name="text" rows="4" required
+                      placeholder="Введите текст..."></textarea>
+        </div>
+
+        <!-- Ссылка -->
+        <div class="mb-4">
+            <label class="form-label">Ссылка (опционально)</label>
+            <input type="text" class="form-control" name="link" placeholder="/tests или https://...">
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-send"></i> Отправить
+        </button>
+    </form>
+</div>
+
+<script>
+    const radios = document.querySelectorAll('input[name="target"]');
+    const singleBlock = document.getElementById('singleBlock');
+    const multipleBlock = document.getElementById('multipleBlock');
+
+    radios.forEach(r => r.addEventListener('change', () => {
+        singleBlock.style.display = r.value === 'single' && r.checked ? 'block' : singleBlock.style.display;
+        multipleBlock.style.display = r.value === 'multiple' && r.checked ? 'block' : multipleBlock.style.display;
+        if (r.checked) {
+            singleBlock.style.display = r.value === 'single' ? 'block' : 'none';
+            multipleBlock.style.display = r.value === 'multiple' ? 'block' : 'none';
+        }
+    }));
+</script>
+{% endblock %}

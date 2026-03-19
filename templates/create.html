@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Создать тест
+{% endblock %}
+
+{% block menu %}
+
+{% endblock %}
+
+{% block main %}
+<form method="POST" enctype="multipart/form-data">
+<section class="text-center container">
+    <div class="col-lg-6 col-md-8 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="/workshop" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Назад в мастерскую
+            </a>
+            <h1 class="mb-0">Создание теста</h1>
+            <div style="width: 180px;"></div> <!-- Spacer for alignment -->
+        </div>
+        <form class="needs-validation" method="post">
+            <input type="text" name="test_name" id="test_name" class="form-control" placeholder="Введите название теста(Не более 80 символов)"
+                   required=""><br>
+            <input type="text" name="test_description" id="test_description" class="form-control" placeholder="Введите описание теста(Не более 220 символов)"
+                   required=""><br>
+            <label>Изображение теста(расширение 2:1):</label>
+            <input type="file" name="test_image" accept="image/*">
+            <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">Продолжить</button>
+            </div>
+        </form>
+    </div>
+</section>
+</form>
+{% endblock %}
