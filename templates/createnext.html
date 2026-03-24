@@ -1,4 +1,4 @@
-v git config --global user.name "michaelberdyugin"{% extends 'base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}
 Что дальше?
@@ -17,34 +17,38 @@ v git config --global user.name "michaelberdyugin"{% extends 'base.html' %}
         <h3 class="mb-0">Что вы хотите сделать?</h3>
         <div style="width: 150px;"></div> <!-- Spacer for alignment -->
     </div>
-    <!-- ✅ Индикатор наличия правильного ответа -->
+    <!-- Индикатор готовности вопроса -->
     {% if last_question %}
-        {% if are_2_questions %}
-            {% if last_question.test_q_type in [3, 31] %}
-                <span class="badge bg-success mb-3">
-                    ✅ Есть минимум один правильный ответ, можно переходить к созданию следующего вопроса
-                </span>
-            {% elif last_question.test_q_type in [4, 41] %}
-                <span class="badge bg-success mb-3">
-                    ✅ Есть минимум две пары, можно переходить к созданию следующего вопроса
-                </span>
-            {% else %}
-                <span class="badge bg-success mb-3">
-                    ✅ Есть минимум два варианта ответа, можно переходить к созданию следующего вопроса
-                </span>
-            {% endif %}
-        {% else %}
-            {% if last_question.test_q_type in [3, 31] %}
+        {% if last_question.test_q_type in [3, 31] %}
+            {% if not are_2_questions %}
                 <span class="badge bg-danger mb-3">
                     ❌ Нет ни одного правильного ответа, добавьте хотя бы один!
                 </span>
-            {% elif last_question.test_q_type in [4, 41] %}
+            {% endif %}
+        {% elif last_question.test_q_type in [4, 41] %}
+            {% if not are_2_questions %}
                 <span class="badge bg-danger mb-3">
                     ❌ Имеется всего 1 пара, добавьте хотя бы ещё одну!
                 </span>
             {% else %}
-                <span class="badge bg-danger mb-3">
-                    ❌ Имеется всего 1 ответ, для создания нового вопроса создайте хотя-бы 2 варианта ответа!
+                <span class="badge bg-success mb-3">
+                    ✅ Есть минимум две пары, можно переходить к созданию следующего вопроса
+                </span>
+            {% endif %}
+        {% else %}
+            {% if not are_2_questions %}
+                {% if answers_count is defined and answers_count >= 2 and not has_correct %}
+                    <span class="badge bg-danger mb-3">
+                        ❌ Нет ни одного правильного ответа! Отметьте хотя бы один ответ как правильный.
+                    </span>
+                {% else %}
+                    <span class="badge bg-danger mb-3">
+                        ❌ Нужно минимум 2 варианта ответа и хотя бы 1 правильный!
+                    </span>
+                {% endif %}
+            {% else %}
+                <span class="badge bg-success mb-3">
+                    ✅ Есть минимум два варианта ответа и правильный ответ, можно переходить к созданию следующего вопроса
                 </span>
             {% endif %}
         {% endif %}
@@ -66,20 +70,6 @@ v git config --global user.name "michaelberdyugin"{% extends 'base.html' %}
             <a href="/createq_0" class="btn btn-primary btn-lg px-5">
                 ➕ Создать вопрос
             </a>
-        {% else %}
-            {% if last_question.test_q_type in [3, 31] %}
-                <button class="btn btn-primary btn-lg px-5" disabled title="Сначала добавьте хотя бы один правильный ответ!">
-                    ➕ Создать вопрос
-                </button>
-            {% elif last_question.test_q_type in [4, 41] %}
-                <button class="btn btn-primary btn-lg px-5" disabled title="Сначала добавьте хотя бы две пары!">
-                    ➕ Создать вопрос
-                </button>
-            {% else %}
-                <button class="btn btn-primary btn-lg px-5" disabled title="Сначала создайте хотя-бы два ответа на этот вопрос!">
-                    ➕ Создать вопрос
-                </button>
-            {% endif %}
         {% endif %}
         <!-- Кнопка 2: Добавить ответ к текущему вопросу -->
         {% if last_question %}

@@ -220,6 +220,45 @@ def _revert_test_to_review(test, user):
     return False
 
 
+def _calc_are_ready(question):
+    """
+    Вычисляет, готов ли вопрос к переходу дальше (are_2_questions).
+    - Типы 3/31: достаточно 1 ответа (все правильные по определению)
+    - Типы 4/41: нужно минимум 2 пары
+    - Типы 1/2/11/21: нужно минимум 2 ответа И хотя бы 1 правильный
+    """
+    answers = Tests_answers.query.filter_by(test_a_question_id=question.test_q_id).all()
+    count = len(answers)
+    if question.test_q_type in [3, 31]:
+        return count >= 1
+    if question.test_q_type in [4, 41]:
+        return count >= 2
+    # Типы 1/2/11/21
+    has_correct = any(a.test_a_is_correct for a in answers)
+    return count >= 2 and has_correct
+
+
+def _render_createnext(current_test, last_question):
+    """Рендерит createnext.html с правильно вычисленными флагами готовности."""
+    answers = Tests_answers.query.filter_by(test_a_question_id=last_question.test_q_id).all()
+    count = len(answers)
+    has_correct = any(a.test_a_is_correct for a in answers)
+    if last_question.test_q_type in [3, 31]:
+        are_ready = count >= 1
+    elif last_question.test_q_type in [4, 41]:
+        are_ready = count >= 2
+    else:
+        are_ready = count >= 2 and has_correct
+    return render_template(
+        "createnext.html",
+        current_test=current_test,
+        last_question=last_question,
+        are_2_questions=are_ready,
+        has_correct=has_correct,
+        answers_count=count
+    )
+
+
 def _create_notification(user_id, sender_id, text, link=None, category=None):
     """
     Создает уведомление для пользователя и при необходимости отправляет email.
@@ -684,10 +723,6 @@ def createq_11():
         flash("Введите текст ответа!", 'warning')
         return redirect("/createq_11")
 
-    if not is_correct:
-        flash("Укажите хотя бы один правильный ответ!", 'warning')
-        return redirect("/createq_11")
-
     # Обработка изображения (идентично функции create)
     image_filename = None
     if 'test_q_image' in request.files:
@@ -760,10 +795,6 @@ def createq_21():
 
     if not test_a:
         flash("Введите текст ответа!", 'warning')
-        return redirect("/createq_21")
-
-    if not is_correct:
-        flash("Укажите хотя бы один правильный ответ!", 'warning')
         return redirect("/createq_21")
 
     # Обработка изображения (идентично функции create)
@@ -1160,10 +1191,6 @@ def createq():
         flash("Заполните вопрос и ответ!", 'warning')
         return redirect("/createq_1")
 
-    if not is_correct:
-        flash("Укажите хотя бы один правильный ответ!", 'warning')
-        return redirect("/createq_1")
-
     # Создаём вопрос
     test_question = Tests_questions(
         test_q_creator_id=current_user.id,
@@ -1221,10 +1248,6 @@ def createq_2():
         flash("Введите текст первого ответа!", 'warning')
         return redirect("/createq_2")
 
-    if not is_correct:
-        flash("Укажите хотя бы один правильный ответ!", 'warning')
-        return redirect("/createq_2")
-
     # Создаём вопрос
     test_question = Tests_questions(
         test_q_creator_id=current_user.id,
@@ -1279,24 +1302,23 @@ def createnext():
             are_2_questions=False
         )
 
-    # ✅ Считаем количество ответов для последнего вопроса текущего теста
-    answers_count = Tests_answers.query.filter_by(
-        test_a_test_id=current_test.test_id,
-        test_a_question_id=last_question.test_q_id
-    ).count()
-    
-    # Для типов 3, 4, 31, 41 (ручной ввод / перетаскивание) достаточно 1 ответа, для остальных нужно минимум 2
-    if last_question.test_q_type in [3, 31]:
-        are_2_questions = answers_count >= 1
-    else:
-        are_2_questions = answers_count >= 2
+    # ✅ Считаем готовность последнего вопроса
+    are_2_questions = _calc_are_ready(last_question)
+    # Для badge: есть ли хотя бы один правильный ответ
+    has_correct = Tests_answers.query.filter_by(
+        test_a_question_id=last_question.test_q_id,
+        test_a_is_correct=True
+    ).first() is not None
 
     return render_template(
         "createnext.html",
         current_test=current_test,
         last_question=last_question,
-        are_2_questions=are_2_questions
+        are_2_questions=are_2_questions,
+        has_correct=has_correct
     )
+
+
 @app.route('/addanswer', methods=["GET", "POST"])
 @login_required
 def addanswer():
@@ -1322,12 +1344,7 @@ def addanswer():
         flash("Добавление ответов через эту страницу доступно только для вопросов типа 'выбор одного ответа'.", 'warning')
         return redirect("/createnext")
 
-    # ✅ Считаем количество ответов для этого вопроса
-    answers_count = Tests_answers.query.filter_by(
-        test_a_test_id=current_test.test_id,
-        test_a_question_id=last_question.test_q_id
-    ).count()
-    are_2_questions = answers_count >= 2
+    # ✅ Считаем количество ответов для этого вопроса (не используется в GET-шаблоне)
 
     if request.method == "GET":
         return render_template(
@@ -1356,25 +1373,8 @@ def addanswer():
     db.session.add(test_answer)
     db.session.commit()
 
-    # После добавления ответа пересчитаем количество ответов
-    answers_count = Tests_answers.query.filter_by(
-        test_a_test_id=current_test.test_id,
-        test_a_question_id=last_question.test_q_id
-    ).count()
-    
-    # Для типов 3, 4, 31 (ручной ввод) достаточно 1 ответа, для остальных нужно минимум 2
-    if last_question.test_q_type in [3, 31]:
-        are_2_questions = answers_count >= 1
-    else:
-        are_2_questions = answers_count >= 2
-
     flash("Ответ добавлен!", 'success')
-    return render_template(
-        "createnext.html",
-        current_test=current_test,
-        last_question=last_question,
-        are_2_questions=are_2_questions
-    )
+    return _render_createnext(current_test, last_question)
 
 
 @app.route('/addanswer_2', methods=["GET", "POST"])
@@ -1403,13 +1403,6 @@ def addanswer_2():
         flash("Эта страница предназначена только для вопросов с выбором нескольких ответов.", 'warning')
         return redirect("/createnext")
 
-    # Считаем количество уже существующих ответов
-    answers_count = Tests_answers.query.filter_by(
-        test_a_test_id=current_test.test_id,
-        test_a_question_id=last_question.test_q_id
-    ).count()
-    are_2_questions = answers_count >= 2
-
     if request.method == "GET":
         return render_template(
             "addanswer_2.html",
@@ -1436,25 +1429,8 @@ def addanswer_2():
     db.session.add(test_answer)
     db.session.commit()
 
-    # Пересчитываем количество ответов
-    answers_count = Tests_answers.query.filter_by(
-        test_a_test_id=current_test.test_id,
-        test_a_question_id=last_question.test_q_id
-    ).count()
-    
-    # Для типов 3, 4, 31 (ручной ввод) достаточно 1 ответа, для остальных нужно минимум 2
-    if last_question.test_q_type in [3, 31]:
-        are_2_questions = answers_count >= 1
-    else:
-        are_2_questions = answers_count >= 2
-
     flash("Вариант ответа добавлен!", 'success')
-    return render_template(
-        "createnext.html",
-        current_test=current_test,
-        last_question=last_question,
-        are_2_questions=are_2_questions
-    )
+    return _render_createnext(current_test, last_question)
 
 
 @app.route('/addanswer_3', methods=["GET", "POST"])
@@ -1483,13 +1459,6 @@ def addanswer_3():
         flash("Эта страница предназначена только для вопросов с ручным вводом ответа.", 'warning')
         return redirect("/createnext")
 
-    # Считаем количество уже существующих ответов
-    answers_count = Tests_answers.query.filter_by(
-        test_a_test_id=current_test.test_id,
-        test_a_question_id=last_question.test_q_id
-    ).count()
-    are_2_questions = answers_count >= 2
-
     if request.method == "GET":
         return render_template(
             "addanswer_3.html",
@@ -1515,25 +1484,8 @@ def addanswer_3():
     db.session.add(test_answer)
     db.session.commit()
 
-    # Пересчитываем количество ответов
-    answers_count = Tests_answers.query.filter_by(
-        test_a_test_id=current_test.test_id,
-        test_a_question_id=last_question.test_q_id
-    ).count()
-    
-    # Для типов 3, 4, 31 (ручной ввод) достаточно 1 ответа, для остальных нужно минимум 2
-    if last_question.test_q_type in [3, 31]:
-        are_2_questions = answers_count >= 1
-    else:
-        are_2_questions = answers_count >= 2
-
     flash("Правильный ответ добавлен!", 'success')
-    return render_template(
-        "createnext.html",
-        current_test=current_test,
-        last_question=last_question,
-        are_2_questions=are_2_questions
-    )
+    return _render_createnext(current_test, last_question)
 
 
 @app.route('/finish-test', methods=["GET", "POST"])
@@ -1557,6 +1509,18 @@ def finish_test():
     if questions_count == 0:
         flash("Нельзя завершить тест без вопросов!", 'danger')
         return redirect("/createnext")
+
+    # Проверяем, что у каждого вопроса типа 1/2/11/21 есть хотя бы один правильный ответ
+    questions_list = Tests_questions.query.filter_by(test_q_test_id=current_test.test_id).all()
+    for q in questions_list:
+        if q.test_q_type in [1, 2, 11, 21]:
+            has_correct = Tests_answers.query.filter_by(
+                test_a_question_id=q.test_q_id,
+                test_a_is_correct=True
+            ).first()
+            if not has_correct:
+                flash(f"Вопрос «{q.test_q_text[:50]}» не имеет ни одного правильного ответа!", 'danger')
+                return redirect("/createnext")
 
     # ✅ Меняем статус теста на "готов" (1)
     current_test.test_status = 1
@@ -2793,25 +2757,8 @@ def addanswer_11():
     db.session.add(test_answer)
     db.session.commit()
 
-    # После добавления ответа пересчитаем количество ответов
-    answers_count = Tests_answers.query.filter_by(
-        test_a_test_id=current_test.test_id,
-        test_a_question_id=last_question.test_q_id
-    ).count()
-    
-    # Для типов 3, 4, 31 (ручной ввод) достаточно 1 ответа, для остальных нужно минимум 2
-    if last_question.test_q_type in [3, 31]:
-        are_2_questions = answers_count >= 1
-    else:
-        are_2_questions = answers_count >= 2
-
     flash("Ответ добавлен!", 'success')
-    return render_template(
-        "createnext.html",
-        current_test=current_test,
-        last_question=last_question,
-        are_2_questions=are_2_questions
-    )
+    return _render_createnext(current_test, last_question)
 
 
 @app.route('/addanswer_21', methods=["GET", "POST"])
@@ -2866,25 +2813,8 @@ def addanswer_21():
     db.session.add(test_answer)
     db.session.commit()
 
-    # Пересчитываем количество ответов
-    answers_count = Tests_answers.query.filter_by(
-        test_a_test_id=current_test.test_id,
-        test_a_question_id=last_question.test_q_id
-    ).count()
-    
-    # Для типов 3, 4, 31 (ручной ввод) достаточно 1 ответа, для остальных нужно минимум 2
-    if last_question.test_q_type in [3, 31]:
-        are_2_questions = answers_count >= 1
-    else:
-        are_2_questions = answers_count >= 2
-
     flash("Вариант ответа добавлен!", 'success')
-    return render_template(
-        "createnext.html",
-        current_test=current_test,
-        last_question=last_question,
-        are_2_questions=are_2_questions
-    )
+    return _render_createnext(current_test, last_question)
 
 
 @app.route('/createq_4', methods=["GET", "POST"])
@@ -3052,17 +2982,8 @@ def addanswer_4():
     db.session.add(test_answer)
     db.session.commit()
 
-    answers_count = Tests_answers.query.filter_by(
-        test_a_question_id=last_question.test_q_id
-    ).count()
-
     flash("Пара добавлена!", 'success')
-    return render_template(
-        "createnext.html",
-        current_test=current_test,
-        last_question=last_question,
-        are_2_questions=answers_count >= 2
-    )
+    return _render_createnext(current_test, last_question)
 
 
 @app.route('/addanswer_41', methods=["GET", "POST"])
@@ -3108,17 +3029,8 @@ def addanswer_41():
     db.session.add(test_answer)
     db.session.commit()
 
-    answers_count = Tests_answers.query.filter_by(
-        test_a_question_id=last_question.test_q_id
-    ).count()
-
     flash("Пара добавлена!", 'success')
-    return render_template(
-        "createnext.html",
-        current_test=current_test,
-        last_question=last_question,
-        are_2_questions=answers_count >= 2
-    )
+    return _render_createnext(current_test, last_question)
 
 
 @app.route('/addanswer_31', methods=["GET", "POST"])
@@ -3172,25 +3084,8 @@ def addanswer_31():
     db.session.add(test_answer)
     db.session.commit()
 
-    # Пересчитываем количество ответов
-    answers_count = Tests_answers.query.filter_by(
-        test_a_test_id=current_test.test_id,
-        test_a_question_id=last_question.test_q_id
-    ).count()
-    
-    # Для типов 3, 4, 31 (ручной ввод) достаточно 1 ответа, для остальных нужно минимум 2
-    if last_question.test_q_type in [3, 31]:
-        are_2_questions = answers_count >= 1
-    else:
-        are_2_questions = answers_count >= 2
-
     flash("Правильный ответ добавлен!", 'success')
-    return render_template(
-        "createnext.html",
-        current_test=current_test,
-        last_question=last_question,
-        are_2_questions=are_2_questions
-    )
+    return _render_createnext(current_test, last_question)
 
 
 @app.route('/logout')
