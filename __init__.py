@@ -3168,6 +3168,12 @@ def profile_notification_settings():
     flash("Настройки уведомлений сохранены.", 'success')
     return redirect("/profile")
 
+
+from api import init_api
+# Подключаем REST API в отдельном модуле.
+# Модели Article/User передаем параметрами, чтобы не было циклических импортов.
+init_api(app, db, Tests, User, Tests_answers, Tests_questions, Test_scores)
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()

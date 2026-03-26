@@ -73,12 +73,16 @@
                         Тип: Выбор нескольких ответов
                         {% elif item.question.test_q_type == 3 %}
                         Тип: Ручной ввод ответа
+                        {% elif item.question.test_q_type == 4 %}
+                        Тип: Перетаскивание (сопоставление)
                         {% elif item.question.test_q_type == 11 %}
                         Тип: Выбор одного ответа с изображением
                         {% elif item.question.test_q_type == 21 %}
                         Тип: Выбор нескольких ответов с изображением
                         {% elif item.question.test_q_type == 31 %}
                         Тип: Ручной ввод ответа с изображением
+                        {% elif item.question.test_q_type == 41 %}
+                        Тип: Перетаскивание с изображением
                         {% endif %}
                         | Статус: 
                         {% if item.question.test_q_status == 1 %}
@@ -90,6 +94,17 @@
                     
                     <!-- Варианты ответов с отметкой правильных -->
                     <div class="mt-3">
+                        {% if item.question.test_q_type in [4, 41] %}
+                        <h6>Пары сопоставления:</h6>
+                        <ul class="list-group">
+                            {% for answer in item.answers %}
+                            <li class="list-group-item list-group-item-success d-flex justify-content-between">
+                                <span><strong>Строка:</strong> {{ answer.test_a_match }}</span>
+                                <span><strong>Блок:</strong> {{ answer.test_a_text }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
                         <h6>Варианты ответов:</h6>
                         <ul class="list-group">
                             {% for answer in item.answers %}
@@ -101,6 +116,7 @@
                             </li>
                             {% endfor %}
                         </ul>
+                        {% endif %}
                     </div>
                 </div>
             </div>
