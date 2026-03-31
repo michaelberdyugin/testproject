@@ -68,7 +68,6 @@
                     <th>Имя пользователя</th>
                     <th>Email</th>
                     <th>Статус</th>
-                    <th>Подтверждён</th>
                     <th>Действия</th>
                 </tr>
             </thead>
@@ -85,13 +84,6 @@
                         <span class="badge bg-warning text-dark">Модератор</span>
                         {% else %}
                         <span class="badge bg-secondary">Пользователь</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if user.email_confirmed %}
-                        <span class="badge bg-success">Да</span>
-                        {% else %}
-                        <span class="badge bg-secondary">Нет</span>
                         {% endif %}
                     </td>
                     <td>

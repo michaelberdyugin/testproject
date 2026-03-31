@@ -1,14 +1,97 @@
 {% extends 'base.html' %}
 
 {% block title %}
-Главная страница
+Главная — Платформа тестирования
 {% endblock %}
 
 {% block menu %}
-
 {% endblock %}
 
 {% block main %}
 
+<!-- Hero -->
+<div class="px-4 py-5 text-center">
+    <i class="bi bi-patch-question-fill display-4 text-primary"></i>
+    <h1 class="display-5 fw-bold mt-3">Платформа тестирования</h1>
+    <p class="col-lg-6 mx-auto lead text-muted">
+        Создавайте тесты, проходите их и отслеживайте результаты. Поддерживаются разные типы вопросов — от выбора ответа до перетаскивания.
+    </p>
+    <div class="d-flex gap-2 justify-content-center mt-4">
+        <a href="/tests" class="btn btn-primary btn-lg px-4">Смотреть тесты</a>
+        {% if not current_user.is_authenticated %}
+        <a href="/registration" class="btn btn-outline-secondary btn-lg px-4">Зарегистрироваться</a>
+        {% else %}
+        <a href="/workshop" class="btn btn-outline-secondary btn-lg px-4"><i class="bi bi-tools"></i> Мастерская</a>
+        {% endif %}
+    </div>
+</div>
+
+<hr class="my-2">
+
+<!-- Возможности -->
+<div class="container py-5">
+    <h2 class="text-center mb-5">Что умеет платформа</h2>
+    <div class="row g-4 text-center">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm p-3">
+                <div class="card-body">
+                    <i class="bi bi-pencil-square display-6 text-primary mb-3"></i>
+                    <h5 class="card-title">Создание тестов</h5>
+                    <p class="card-text text-muted">Добавляйте вопросы разных типов: одиночный выбор, множественный выбор, ввод текста и сопоставление перетаскиванием. Поддерживаются изображения.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm p-3">
+                <div class="card-body">
+                    <i class="bi bi-play-circle display-6 text-success mb-3"></i>
+                    <h5 class="card-title">Прохождение тестов</h5>
+                    <p class="card-text text-muted">Проходите опубликованные тесты, получайте результат и оценивайте тест после прохождения.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm p-3">
+                <div class="card-body">
+                    <i class="bi bi-shield-check display-6 text-warning mb-3"></i>
+                    <h5 class="card-title">Модерация</h5>
+                    <p class="card-text text-muted">Перед публикацией тест проходит проверку модератором. Это гарантирует качество контента на платформе.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Типы вопросов -->
+<div class="bg-light rounded-3 p-5 mb-5">
+    <h2 class="text-center mb-4">Типы вопросов</h2>
+    <div class="row g-3 justify-content-center">
+        <div class="col-md-5">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item bg-transparent"><i class="bi bi-check2-circle text-primary me-2"></i>Выбор одного ответа</li>
+                <li class="list-group-item bg-transparent"><i class="bi bi-check2-square text-primary me-2"></i>Выбор нескольких ответов</li>
+                <li class="list-group-item bg-transparent"><i class="bi bi-keyboard text-primary me-2"></i>Ввод ответа вручную</li>
+                <li class="list-group-item bg-transparent"><i class="bi bi-arrows-move text-primary me-2"></i>Сопоставление перетаскиванием</li>
+            </ul>
+        </div>
+        <div class="col-md-5">
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item bg-transparent"><i class="bi bi-image text-secondary me-2"></i>Все типы поддерживают изображения</li>
+                <li class="list-group-item bg-transparent"><i class="bi bi-shuffle text-secondary me-2"></i>Ответы перемешиваются при каждом прохождении</li>
+                <li class="list-group-item bg-transparent"><i class="bi bi-bar-chart text-secondary me-2"></i>Результат и оценка после прохождения</li>
+                <li class="list-group-item bg-transparent"><i class="bi bi-bell text-secondary me-2"></i>Уведомления о статусе теста</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% if not current_user.is_authenticated %}
+<!-- CTA для незарегистрированных -->
+<div class="text-center py-4 mb-5">
+    <h4>Готовы начать?</h4>
+    <p class="text-muted">Зарегистрируйтесь, чтобы создавать тесты и сохранять результаты.</p>
+    <a href="/registration" class="btn btn-primary px-5">Создать аккаунт</a>
+</div>
+{% endif %}
 
 {% endblock %}

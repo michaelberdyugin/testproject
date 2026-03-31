@@ -109,17 +109,53 @@
             </div>
             <form method="POST" action="/profile/update-email">
                 <div class="modal-body">
+                    <label class="form-label">Новая почта</label>
                     <input type="email" class="form-control" name="email"
-                           value="{{ current_user.email }}" required>
+                           placeholder="новый@email.com" required>
+                    <div class="form-text">На новую почту будет отправлен код подтверждения.</div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                    <button type="submit" class="btn btn-primary">Отправить код</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Модалка: ввод кода подтверждения почты -->
+<div class="modal fade" id="emailConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Подтверждение смены почты</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/profile/update-email">
+                <div class="modal-body">
+                    {% if pending_new_email %}
+                    <p class="text-muted small">Код отправлен на <strong>{{ pending_new_email }}</strong></p>
+                    {% endif %}
+                    <label class="form-label">Код подтверждения</label>
+                    <input type="text" class="form-control" name="email_verification_code"
+                           maxlength="6" placeholder="000000" required autofocus>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Подтвердить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if show_email_confirm %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        new bootstrap.Modal(document.getElementById('emailConfirmModal')).show();
+    });
+</script>
+{% endif %}
 
 <!-- Модалка: сменить пароль -->
 <div class="modal fade" id="passwordModal" tabindex="-1">
