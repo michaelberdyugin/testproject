@@ -8,7 +8,7 @@
     <div class="alert alert-info">
         <strong>Тест:</strong> {{ current_test.test_name }}
     </div>
-    <p class="text-muted">Укажите текст вопроса, изображение и первую пару (строка — блок).</p>
+    <p class="text-muted">Укажите текст вопроса, изображение и первую пару (блок 1 — блок 2).</p>
 
     <form method="POST" enctype="multipart/form-data" class="mx-auto">
         <div class="mb-3">
@@ -21,11 +21,11 @@
             <div class="form-text">Разрешены: PNG, JPG, JPEG, GIF, WEBP (макс. 16 МБ)</div>
         </div>
         <div class="mb-3">
-            <label for="row_text" class="form-label">Строка (к чему перетаскивают)</label>
+            <label for="row_text" class="form-label">Блок 1 (к чему перетаскивают)</label>
             <input type="text" class="form-control" id="row_text" name="row_text" required>
         </div>
         <div class="mb-3">
-            <label for="block_text" class="form-label">Блок (что перетаскивают)</label>
+            <label for="block_text" class="form-label">Блок 2 (что перетаскивают)</label>
             <input type="text" class="form-control" id="block_text" name="block_text" required>
         </div>
         <div class="d-flex justify-content-between">

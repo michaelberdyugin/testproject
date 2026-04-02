@@ -11,8 +11,19 @@ tests_bp = Blueprint('tests', __name__)
 
 @tests_bp.route('/tests')
 def tests():
+    from models import User
     all_tests = Tests.query.filter_by(test_status=2).all()
-    return render_template("tests.html", tests=all_tests)
+
+    # Собираем создателей и средние оценки для каждого теста
+    creators = {}
+    avg_scores = {}
+    for test in all_tests:
+        user = User.query.get(test.test_id_creator)
+        creators[test.test_id] = user.username if user else "—"
+        scores = Test_scores.query.filter_by(test_s_test_id=test.test_id).all()
+        avg_scores[test.test_id] = round(sum(s.test_s_score for s in scores) / len(scores), 1) if scores else None
+
+    return render_template("tests.html", tests=all_tests, creators=creators, avg_scores=avg_scores)
 
 
 @tests_bp.route('/test/<test_name>')
@@ -27,13 +38,17 @@ def view_test(test_name):
     average_score = round(sum(s.test_s_score for s in scores) / len(scores), 1) if scores else 0
 
     user_score = None
+    active_test = None
     if current_user.is_authenticated:
         user_score = Test_scores.query.filter_by(
             test_s_user_id=current_user.id, test_s_test_id=test.test_id
         ).first()
+        if current_user.current_test_id and current_user.current_test_id != test.test_id:
+            active_test = Tests.query.get(current_user.current_test_id)
 
     return render_template("test_info.html", test=test, questions_count=questions_count,
-                           average_score=average_score, scores_count=len(scores), user_score=user_score)
+                           average_score=average_score, scores_count=len(scores),
+                           user_score=user_score, active_test=active_test)
 
 
 @tests_bp.route('/test/<test_name>/start')

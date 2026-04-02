@@ -30,6 +30,9 @@ def profile_update_username():
     if not new_username:
         flash("Имя не может быть пустым!", 'danger')
         return redirect("/profile")
+    if len(new_username) > 30:
+        flash("Имя не может быть длиннее 30 символов!", 'danger')
+        return redirect("/profile")
     if User.query.filter(User.username == new_username, User.id != current_user.id).first():
         flash("Это имя уже занято!", 'danger')
         return redirect("/profile")

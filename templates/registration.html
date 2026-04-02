@@ -17,6 +17,7 @@
         <h1>Регистрация</h1>
         <form class="needs-validation" method="post">
             <input type="text" name="username" id="username" class="form-control" placeholder="Введите логин"
+                   maxlength="30"
                    value="{{ pending_username or '' }}" required=""><br>
             <input type="email" name="email" id="email" class="form-control" placeholder="Введите почту"
                    value="{{ pending_email or '' }}" required=""><br>

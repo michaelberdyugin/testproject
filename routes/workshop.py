@@ -353,7 +353,7 @@ def _addanswer_route(q_type, template, redirect_url, is_correct_forced=None):
         row_text = (request.form.get('row_text') or "").strip()
         block_text = (request.form.get('block_text') or "").strip()
         if not row_text or not block_text:
-            flash("Введите текст строки и блока!", 'warning')
+            flash("Введите текст блока 1 и блока 2!", 'warning')
             return redirect(redirect_url)
         db.session.add(Tests_answers(test_a_text=block_text, test_a_match=row_text,
                                      test_a_creator_id=current_user.id, test_a_test_id=current_test.test_id,

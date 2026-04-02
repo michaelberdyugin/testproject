@@ -14,7 +14,7 @@
                 <img src="{{ url_for('static', filename='img/' + test.test_image) }}"
                      class="card-img-top"
                      alt="{{ test.test_name }}"
-                     style="max-height: 400px; object-fit: cover;">
+                     style="max-height: 400px; object-fit: fill; width: 100%;">
                 {% endif %}
                 <div class="card-body">
                     <h1 class="card-title">{{ test.test_name }}</h1>
@@ -102,10 +102,9 @@
                             <i class="bi bi-play-circle"></i> Продолжить прохождение
                         </a>
                         {% else %}
-                        <div class="alert alert-warning" role="alert">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            Вы уже проходите другой тест. Завершите его перед началом нового.
-                        </div>
+                        <a href="{{ url_for('take_test', test_name=active_test.test_name) }}" class="btn btn-warning btn-lg">
+                            <i class="bi bi-exclamation-triangle"></i> Сначала завершите тест «{{ active_test.test_name }}»
+                        </a>
                         {% endif %}
                     {% else %}
                     <a href="{{ url_for('start_test', test_name=test.test_name) }}" class="btn btn-primary btn-lg">

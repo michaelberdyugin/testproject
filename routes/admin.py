@@ -71,6 +71,9 @@ def admin_update_username(user_id):
     if not new_username:
         flash("Имя не может быть пустым!", 'danger')
         return redirect("/admin/users")
+    if len(new_username) > 30:
+        flash("Имя не может быть длиннее 30 символов!", 'danger')
+        return redirect("/admin/users")
 
     old_username = user.username
     reason = request.form.get('reason', '').strip()

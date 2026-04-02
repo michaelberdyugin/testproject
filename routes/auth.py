@@ -62,6 +62,9 @@ def registration():
     if not username or not email or not password:
         flash("Заполните логин, почту и пароль.", "danger")
         return redirect("/registration")
+    if len(username) > 30:
+        flash("Имя пользователя не может быть длиннее 30 символов!", "danger")
+        return redirect("/registration")
     if "@" not in email or "." not in email:
         flash("Введите корректную почту.", "danger")
         return redirect("/registration")

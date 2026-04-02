@@ -40,7 +40,7 @@ class Tests_answers(db.Model):
     test_a_question_id = db.Column(db.Integer)
     test_a_test_id = db.Column(db.Integer)
     test_a_text = db.Column(db.String)
-    test_a_match = db.Column(db.String)   # для типа 4/41: строка сопоставления
+    test_a_match = db.Column(db.String)   # для типа 4/41: блок 1 (к чему перетаскивают)
     test_a_status = db.Column(db.Integer)
     test_a_is_correct = db.Column(db.Boolean)
 

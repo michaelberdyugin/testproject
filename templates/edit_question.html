@@ -55,7 +55,7 @@
                             <li>Нельзя удалить последний ответ</li>
                             <li>Все ответы считаются правильными вариантами</li>
                             {% elif question.test_q_type in [4, 41] %}
-                            <li>Минимум <strong>2 пары</strong> (строка — блок)</li>
+                            <li>Минимум <strong>2 пары</strong> (блок 1 — блок 2)</li>
                             <li>Нельзя удалить последние 2 пары</li>
                             {% endif %}
                         </ul>
@@ -136,7 +136,7 @@
                         {% elif question.test_q_type in [3, 31] %}
                         Минимум 1 правильный вариант ответа
                         {% elif question.test_q_type in [4, 41] %}
-                        Минимум 2 пары (строка — блок)
+                        Минимум 2 пары (блок 1 — блок 2)
                         {% endif %}
                     </small>
                 </div>
@@ -162,11 +162,11 @@
                                     
                                     {% if question.test_q_type in [4, 41] %}
                                     <div class="mb-3">
-                                        <label class="form-label">Строка</label>
+                                        <label class="form-label">Блок 1</label>
                                         <input type="text" class="form-control" name="row_text" required>
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Блок</label>
+                                        <label class="form-label">Блок 2</label>
                                         <input type="text" class="form-control" name="answer_text" required>
                                     </div>
                                     {% else %}
@@ -228,11 +228,11 @@
                                 
                                 {% if question.test_q_type in [4, 41] %}
                                 <div class="mb-2">
-                                    <label class="form-label">Строка</label>
+                                    <label class="form-label">Блок 1</label>
                                     <input type="text" class="form-control" name="row_text" value="{{ answer.test_a_match }}" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Блок</label>
+                                    <label class="form-label">Блок 2</label>
                                     <input type="text" class="form-control" name="answer_text" value="{{ answer.test_a_text }}" required>
                                 </div>
                                 {% else %}

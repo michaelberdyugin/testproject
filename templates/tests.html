@@ -10,14 +10,13 @@
 <div class="row g-3">
   {% for test in tests %}
   <!-- Карточка 1 -->
-  <div class="col-md-3">
+  <div class="col-sm-6 col-lg-3">
   <div class="card card-fixed">
     {% if test.test_image %}
         <img src="{{ url_for('static', filename='img/' + test.test_image) }}"
              class="card-img-top"
              alt="{{ test.test_name }}">
       {% else %}
-        <!-- Заглушка, если изображения нет -->
         <img src="{{ url_for('static', filename='img/placeholder.png') }}"
              class="card-img-top"
              alt="Нет изображения">
@@ -25,7 +24,19 @@
 
     <div class="card-body">
       <h5 class="card-name">{{test.test_name|truncate(80)}}</h5>
-      <p class="card-description">{{test.test_description|truncate(220)}}</p>
+      <p class="card-description">{{test.test_description}}</p>
+      <div class="d-flex justify-content-between align-items-center mb-2 text-muted small">
+        <span class="text-truncate me-2" style="max-width: 60%;">
+          <i class="bi bi-person"></i> {{ creators[test.test_id] }}
+        </span>
+        <span class="text-nowrap">
+          {% if avg_scores[test.test_id] %}
+          <i class="bi bi-star-fill text-warning"></i> {{ avg_scores[test.test_id] }}
+          {% else %}
+          <i class="bi bi-star text-secondary"></i> —
+          {% endif %}
+        </span>
+      </div>
       <a href="{{ url_for('view_test', test_name=test.test_name) }}" class="btn btn-primary">Открыть тест</a>
     </div>
   </div>
