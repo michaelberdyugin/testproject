@@ -136,8 +136,8 @@
 Если используете GitHub:
 
 ```powershell
-git clone https://github.com/ivan-artemev24/Python-1-Artemev
-cd Python-1-Artemev
+git clone https://github.com/michaelberdyugin/testproject
+cd testproject
 ```
 
 #### 2. Создание и активация виртуального окружения
