@@ -5,11 +5,28 @@
 {% endblock %}
 
 {% block main %}
-{% if tests %}
 
+<form method="GET" action="/tests" class="row g-2 mb-4 align-items-end">
+  <div class="col-sm-5">
+    <input type="text" class="form-control" name="name" placeholder="Поиск по названию" value="{{ q_name }}">
+  </div>
+  <div class="col-sm-4">
+    <input type="text" class="form-control" name="author" placeholder="Поиск по автору" value="{{ q_author }}">
+  </div>
+  <div class="col-sm-2">
+    <select class="form-select" name="sort">
+      <option value="" {% if sort == '' %}selected{% endif %}>По умолчанию</option>
+      <option value="rating" {% if sort == 'rating' %}selected{% endif %}>По рейтингу</option>
+    </select>
+  </div>
+  <div class="col-sm-1">
+    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+  </div>
+</form>
+
+{% if tests %}
 <div class="row g-3">
   {% for test in tests %}
-  <!-- Карточка 1 -->
   <div class="col-sm-6 col-lg-3">
   <div class="card card-fixed">
     {% if test.test_image %}
@@ -41,9 +58,13 @@
     </div>
   </div>
   </div>
-{% endfor %}
+  {% endfor %}
+</div>
   {% else %}
   <div class="alert alert-info text-center">
+    {% if q_name or q_author %}
+    <p class="mb-0">Ничего не найдено. Попробуйте изменить запрос.</p>
+    {% else %}
     <p class="mb-3">Тестов пока нет.</p>
     {% if current_user.is_authenticated %}
     <a href="/workshop" class="btn btn-primary">
@@ -52,8 +73,8 @@
     {% else %}
     <p>Войдите в систему, чтобы создавать тесты.</p>
     {% endif %}
+    {% endif %}
   </div>
 {% endif %}
 
-</div>
 {% endblock %}

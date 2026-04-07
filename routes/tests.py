@@ -12,9 +12,16 @@ tests_bp = Blueprint('tests', __name__)
 @tests_bp.route('/tests')
 def tests():
     from models import User
-    all_tests = Tests.query.filter_by(test_status=2).all()
+    q_name = request.args.get('name', '').strip()
+    q_author = request.args.get('author', '').strip()
+    sort = request.args.get('sort', '')
 
-    # Собираем создателей и средние оценки для каждого теста
+    query = Tests.query.filter_by(test_status=2)
+    if q_name:
+        query = query.filter(Tests.test_name.ilike(f'%{q_name}%'))
+
+    all_tests = query.all()
+
     creators = {}
     avg_scores = {}
     for test in all_tests:
@@ -23,7 +30,14 @@ def tests():
         scores = Test_scores.query.filter_by(test_s_test_id=test.test_id).all()
         avg_scores[test.test_id] = round(sum(s.test_s_score for s in scores) / len(scores), 1) if scores else None
 
-    return render_template("tests.html", tests=all_tests, creators=creators, avg_scores=avg_scores)
+    if q_author:
+        all_tests = [t for t in all_tests if q_author.lower() in creators[t.test_id].lower()]
+
+    if sort == 'rating':
+        all_tests.sort(key=lambda t: avg_scores[t.test_id] or 0, reverse=True)
+
+    return render_template("tests.html", tests=all_tests, creators=creators, avg_scores=avg_scores,
+                           q_name=q_name, q_author=q_author, sort=sort)
 
 
 @tests_bp.route('/test/<test_name>')

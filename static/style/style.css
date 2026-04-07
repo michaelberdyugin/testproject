@@ -131,3 +131,320 @@
 .btn-lg {
   border-radius: 12px !important;
 }
+
+  /* Глобальное правило для всех card-img-top кроме .card-fixed */
+  .card:not(.card-fixed) .card-img-top {
+    object-fit: fill !important;
+    width: 100%;
+  }
+
+  /* Кнопка переключения темы */
+  #theme-toggle {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 1050;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #212529;
+    color: #f8f9fa;
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  [data-bs-theme="dark"] #theme-toggle {
+    background-color: #f8f9fa;
+    color: #212529;
+  }
+
+/* ===== ТЁМНАЯ ТЕМА ===== */
+html.dark {
+  --bg: #1a1d23;
+  --bg-card: #22262e;
+  --bg-input: #2a2f3a;
+  --bg-header: #1e2128;
+  --border: #3a3f4b;
+  --text: #e2e6f0;
+  --text-muted: #8b92a5;
+  --link: #7eb3ff;
+  --accent: #4a7fd4;
+}
+
+html.dark body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* Навбар и футер */
+html.dark header,
+html.dark footer {
+  background-color: var(--bg) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .container > footer {
+  background-color: var(--bg) !important;
+}
+
+html.dark .nav-link {
+  color: var(--text) !important;
+}
+
+html.dark .nav-link:hover {
+  color: var(--link) !important;
+}
+
+html.dark .navbar-toggler {
+  border-color: var(--border);
+}
+
+html.dark .navbar-toggler-icon {
+  filter: invert(1);
+}
+
+/* Карточки */
+html.dark .card {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .card-header {
+  background-color: #2c3140 !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .card-footer {
+  background-color: #2c3140 !important;
+  border-color: var(--border) !important;
+}
+
+/* Формы */
+html.dark .form-control,
+html.dark .form-select {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .form-control:focus,
+html.dark .form-select:focus {
+  background-color: var(--bg-input) !important;
+  border-color: var(--accent) !important;
+  color: var(--text) !important;
+  box-shadow: 0 0 0 0.2rem rgba(74, 127, 212, 0.25) !important;
+}
+
+html.dark .form-control::placeholder {
+  color: var(--text-muted) !important;
+}
+
+html.dark .form-label {
+  color: var(--text);
+}
+
+html.dark .form-check-input {
+  background-color: var(--bg-input);
+  border-color: var(--border);
+}
+
+/* Таблицы */
+html.dark .table {
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .table th,
+html.dark .table td {
+  border-color: var(--border) !important;
+}
+
+html.dark .table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(255,255,255,0.03) !important;
+  color: var(--text) !important;
+}
+
+html.dark .table-hover > tbody > tr:hover > * {
+  background-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Алерты */
+html.dark .alert-info {
+  background-color: #1e3a4a !important;
+  border-color: #2a5068 !important;
+  color: #7ecfef !important;
+}
+
+html.dark .alert-warning {
+  background-color: #3a2e10 !important;
+  border-color: #5a4a1a !important;
+  color: #f0c060 !important;
+}
+
+html.dark .alert-danger {
+  background-color: #3a1a1a !important;
+  border-color: #5a2a2a !important;
+  color: #f08080 !important;
+}
+
+html.dark .alert-success {
+  background-color: #1a3a2a !important;
+  border-color: #2a5a3a !important;
+  color: #70d090 !important;
+}
+
+/* Модальные окна */
+html.dark .modal-content {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .modal-header,
+html.dark .modal-footer {
+  border-color: var(--border) !important;
+}
+
+/* Бейджи и прочее */
+html.dark .text-muted {
+  color: var(--text-muted) !important;
+}
+
+html.dark .border-bottom,
+html.dark .border {
+  border-color: var(--border) !important;
+}
+
+html.dark .list-group-item {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+html.dark .list-group-item-success {
+  background-color: #1a3a2a !important;
+  color: #70d090 !important;
+}
+
+html.dark hr {
+  border-color: var(--border) !important;
+}
+
+html.dark .dropdown-menu {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .dropdown-item {
+  color: var(--text) !important;
+}
+
+html.dark .dropdown-item:hover {
+  background-color: var(--bg-input) !important;
+}
+
+/* Кнопка темы в тёмном режиме */
+html.dark #theme-toggle {
+  background-color: #f0f0f0;
+  color: #1a1d23;
+}
+
+/* Outline-кнопки в тёмной теме */
+html.dark .btn-outline-secondary {
+  color: #a0a8b8 !important;
+  border-color: #4a5060 !important;
+  background-color: transparent !important;
+}
+
+html.dark .btn-outline-secondary:hover {
+  background-color: #2e3340 !important;
+  color: var(--text) !important;
+  border-color: #6a7080 !important;
+}
+
+html.dark .btn-outline-danger {
+  color: #f08080 !important;
+  border-color: #7a3030 !important;
+  background-color: transparent !important;
+}
+
+html.dark .btn-outline-danger:hover {
+  background-color: #3a1a1a !important;
+  color: #ffaaaa !important;
+  border-color: #aa4444 !important;
+}
+
+html.dark .btn-outline-primary {
+  color: #7eb3ff !important;
+  border-color: #3a5a90 !important;
+  background-color: transparent !important;
+}
+
+html.dark .btn-outline-primary:hover {
+  background-color: #1e3060 !important;
+  color: #aad0ff !important;
+  border-color: #5a80c0 !important;
+}
+
+html.dark .btn-outline-info {
+  color: #7ecfef !important;
+  border-color: #2a5068 !important;
+  background-color: transparent !important;
+}
+
+html.dark .btn-outline-info:hover {
+  background-color: #1e3a4a !important;
+  color: #aae8ff !important;
+}
+
+html.dark .btn-outline-warning {
+  color: #f0c060 !important;
+  border-color: #5a4a1a !important;
+  background-color: transparent !important;
+}
+
+html.dark .btn-outline-warning:hover {
+  background-color: #3a2e10 !important;
+  color: #ffd880 !important;
+}
+
+html.dark .btn-outline-success {
+  color: #70d090 !important;
+  border-color: #2a5a3a !important;
+  background-color: transparent !important;
+}
+
+html.dark .btn-outline-success:hover {
+  background-color: #1a3a2a !important;
+  color: #90f0a8 !important;
+}
+
+/* badge */
+html.dark .badge.bg-secondary {
+  background-color: #3a4050 !important;
+}
+
+/* bg-light секции */
+html.dark .bg-light {
+  background-color: var(--bg-card) !important;
+}
+
+/* Прогресс-бар */
+html.dark .progress {
+  background-color: #2a2f3a !important;
+}
+
+/* Input group */
+html.dark .input-group-text {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
