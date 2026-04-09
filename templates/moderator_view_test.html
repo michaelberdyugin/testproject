@@ -27,6 +27,8 @@
                                 <span class="badge bg-warning">На проверке</span>
                                 {% elif test.test_status == 2 %}
                                 <span class="badge bg-success">Опубликован</span>
+                                {% elif test.test_status == 3 %}
+                                <span class="badge bg-danger">По жалобам</span>
                                 {% endif %}
                             </p>
                         </div>
@@ -129,7 +131,7 @@
             
             <!-- Кнопки навигации -->
             <div class="row mt-4 mb-4">
-                {% if test.test_status == 1 %}
+                {% if test.test_status in [1, 3] %}
                 <div class="col-md-6">
                     <a href="{{ url_for('moderator_review_test', test_name=test.test_name) }}" 
                        class="btn btn-success btn-lg w-100">

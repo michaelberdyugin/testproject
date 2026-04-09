@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, flash, current_
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import Tests, Tests_questions, Tests_answers, Test_scores
+from models import Tests, Tests_questions, Tests_answers, Test_scores, TestReport
 from helpers import _create_notification, delete_image
 
 moderator_bp = Blueprint('moderator', __name__)
@@ -49,13 +49,29 @@ def moderator_2():
     return render_template("moderator_2.html", tests=pending_tests)
 
 
+@moderator_bp.route('/moderator/reported')
+@login_required
+def moderator_reported_tests():
+    err = _require_mod()
+    if err:
+        return err
+    reported_tests = Tests.query.filter_by(test_status=3).all()
+    report_counts = {
+        t.test_id: db.session.query(TestReport.tr_user_id).filter_by(
+            tr_test_id=t.test_id, tr_type='complaint', tr_resolved=False
+        ).distinct().count()
+        for t in reported_tests
+    }
+    return render_template("moderator_reported.html", tests=reported_tests, report_counts=report_counts)
+
+
 @moderator_bp.route('/moderator/manage')
 @login_required
 def moderator_manage_tests():
     if current_user.admin <= 1:
         flash("У вас нет доступа к этой странице!", 'danger')
         return redirect("/")
-    all_tests = Tests.query.filter(Tests.test_status.in_([1, 2])).all()
+    all_tests = Tests.query.filter(Tests.test_status.in_([1, 2, 3])).all()
     return render_template("moderator_manage.html", tests=all_tests)
 
 
@@ -65,17 +81,18 @@ def moderator_review_test(test_name):
     err = _require_mod()
     if err:
         return err
-    test = Tests.query.filter_by(test_name=test_name, test_status=1).first()
+    test = Tests.query.filter_by(test_name=test_name).filter(Tests.test_status.in_([1, 3])).first()
     if not test:
         flash("Тест не найден или уже проверен!", 'danger')
         return redirect("/moderator_2")
 
-    questions = Tests_questions.query.filter_by(test_q_test_id=test.test_id, test_q_status=1).all()
+    questions = Tests_questions.query.filter_by(test_q_test_id=test.test_id).all()
     questions_with_answers = [
-        {'question': q, 'answers': Tests_answers.query.filter_by(test_a_question_id=q.test_q_id, test_a_status=1).all()}
+        {'question': q, 'answers': Tests_answers.query.filter_by(test_a_question_id=q.test_q_id).all()}
         for q in questions
     ]
-    return render_template("moderator_review_test.html", test=test, questions_with_answers=questions_with_answers)
+    back_url = "/moderator/reported" if test.test_status == 3 else "/moderator_2"
+    return render_template("moderator_review_test.html", test=test, questions_with_answers=questions_with_answers, back_url=back_url)
 
 
 @moderator_bp.route('/moderator/approve/<test_name>', methods=["POST"])
@@ -84,16 +101,22 @@ def moderator_approve_test(test_name):
     err = _require_mod()
     if err:
         return err
-    test = Tests.query.filter_by(test_name=test_name, test_status=1).first()
+    test = Tests.query.filter_by(test_name=test_name).filter(Tests.test_status.in_([1, 3])).first()
     if not test:
         flash("Тест не найден или уже проверен!", 'danger')
         return redirect("/moderator_2")
 
+    previous_status = test.test_status
     test.test_status = 2
-    for q in Tests_questions.query.filter_by(test_q_test_id=test.test_id, test_q_status=1).all():
+    for q in Tests_questions.query.filter_by(test_q_test_id=test.test_id).all():
         q.test_q_status = 2
-    for a in Tests_answers.query.filter_by(test_a_test_id=test.test_id, test_a_status=1).all():
+    for a in Tests_answers.query.filter_by(test_a_test_id=test.test_id).all():
         a.test_a_status = 2
+
+    if previous_status == 3:
+        TestReport.query.filter_by(
+            tr_test_id=test.test_id, tr_type='complaint', tr_resolved=False
+        ).update({'tr_resolved': True})
 
     _create_notification(
         user_id=test.test_id_creator, sender_id=current_user.id,
@@ -102,7 +125,7 @@ def moderator_approve_test(test_name):
     )
     db.session.commit()
     flash(f"Тест '{test_name}' успешно одобрен и опубликован!", 'success')
-    return redirect("/moderator_2")
+    return redirect("/moderator/reported" if previous_status == 3 else "/moderator_2")
 
 
 @moderator_bp.route('/moderator/delete/<test_name>', methods=["POST"])
@@ -111,13 +134,14 @@ def moderator_delete_test(test_name):
     err = _require_mod()
     if err:
         return err
-    test = Tests.query.filter_by(test_name=test_name, test_status=1).first()
+    test = Tests.query.filter_by(test_name=test_name).filter(Tests.test_status.in_([1, 3])).first()
     if not test:
         flash("Тест не найден!", 'danger')
         return redirect("/moderator_2")
+    back_to_reported = test.test_status == 3
     _delete_test_full(test)
     flash(f"Тест '{test_name}' успешно удалён!", 'success')
-    return redirect("/moderator_2")
+    return redirect("/moderator/reported" if back_to_reported else "/moderator_2")
 
 
 @moderator_bp.route('/moderator/delete-any/<test_name>', methods=["POST"])
@@ -126,7 +150,7 @@ def moderator_delete_any_test(test_name):
     err = _require_mod()
     if err:
         return err
-    test = Tests.query.filter_by(test_name=test_name).filter(Tests.test_status.in_([1, 2])).first()
+    test = Tests.query.filter_by(test_name=test_name).filter(Tests.test_status.in_([1, 2, 3])).first()
     if not test:
         flash("Тест не найден!", 'danger')
         return redirect("/moderator/manage")
@@ -141,7 +165,7 @@ def moderator_view_test(test_name):
     err = _require_mod()
     if err:
         return err
-    test = Tests.query.filter_by(test_name=test_name).filter(Tests.test_status.in_([1, 2])).first()
+    test = Tests.query.filter_by(test_name=test_name).filter(Tests.test_status.in_([1, 2, 3])).first()
     if not test:
         flash("Тест не найден!", 'danger')
         return redirect("/moderator/manage")

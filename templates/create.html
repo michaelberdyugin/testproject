@@ -24,6 +24,12 @@
                    required=""><br>
             <input type="text" name="test_description" id="test_description" class="form-control" placeholder="Введите описание теста(Не более 220 символов)"
                    required=""><br>
+            <select name="test_cat_id" class="form-select mb-3">
+                <option value="">— Без категории —</option>
+                {% for cat in categories %}
+                <option value="{{ cat.cat_id }}">{{ cat.cat_name }}</option>
+                {% endfor %}
+            </select>
             <label>Изображение теста(расширение 2:1):</label>
             <input type="file" name="test_image" accept="image/*">
             <div class="text-center mt-4">

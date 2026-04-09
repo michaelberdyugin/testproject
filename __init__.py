@@ -97,7 +97,24 @@ from models import Tests, Tests_answers, Tests_questions, Test_scores
 from api import init_api
 init_api(app, db, Tests, User, Tests_answers, Tests_questions, Test_scores)
 
+
+def _ensure_base_data():
+    """Создает таблицы и базовые категории при необходимости."""
+    from models import DEFAULT_CATEGORIES, TestCategory
+
+    db.create_all()
+    try:
+        if not TestCategory.query.first():
+            for name in DEFAULT_CATEGORIES:
+                db.session.add(TestCategory(cat_name=name))
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+with app.app_context():
+    _ensure_base_data()
+
+
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run()

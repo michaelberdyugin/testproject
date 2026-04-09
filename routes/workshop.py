@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, redirect, flash, current_
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import Tests, Tests_questions, Tests_answers, Test_scores
+from models import Tests, Tests_questions, Tests_answers, Test_scores, get_category_choices
 from helpers import (allowed_file, validate_test_name, delete_image,
                      _render_createnext, _calc_are_ready)
 
@@ -35,11 +35,17 @@ def workshop():
 @workshop_bp.route('/create', methods=["GET", "POST"])
 @login_required
 def create():
+    categories = get_category_choices()
     if request.method == "GET":
-        return render_template("create.html")
+        return render_template("create.html", categories=categories)
 
     test_name = request.form.get('test_name')
     test_description = request.form.get('test_description')
+    raw_cat_id = (request.form.get('test_cat_id') or '').strip()
+    try:
+        test_cat_id = int(raw_cat_id) if raw_cat_id else None
+    except ValueError:
+        test_cat_id = None
 
     if not validate_test_name(test_name):
         flash("Название теста содержит недопустимые символы!", 'danger')
@@ -60,7 +66,8 @@ def create():
             return redirect("/create")
 
     test = Tests(test_name=test_name, test_description=test_description,
-                 test_status=0, test_id_creator=current_user.id, test_image=image_filename)
+                 test_status=0, test_id_creator=current_user.id,
+                 test_image=image_filename, test_cat_id=test_cat_id)
     db.session.add(test)
     db.session.commit()
     return redirect("/createq_0")

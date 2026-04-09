@@ -52,21 +52,21 @@
             <form method="POST" action="/profile/notification-settings">
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" name="email_tests" id="emailTests"
-                           {% if settings is none or settings.uns_email_tests %}checked{% endif %}>
+                           {% if current_user.notif_email_tests %}checked{% endif %}>
                     <label class="form-check-label" for="emailTests">
                         Уведомления о тестах (одобрение, правки модератора)
                     </label>
                 </div>
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" name="email_admin_messages" id="emailAdmin"
-                           {% if settings is none or settings.uns_email_admin_messages %}checked{% endif %}>
+                           {% if current_user.notif_email_admin %}checked{% endif %}>
                     <label class="form-check-label" for="emailAdmin">
                         Сообщения от администратора
                     </label>
                 </div>
                 <div class="form-check mb-3">
                     <input class="form-check-input" type="checkbox" name="email_account_changes" id="emailAccount"
-                           {% if settings is none or settings.uns_email_account_changes %}checked{% endif %}>
+                           {% if current_user.notif_email_account %}checked{% endif %}>
                     <label class="form-check-label" for="emailAccount">
                         Изменение имени или статуса администратором
                     </label>

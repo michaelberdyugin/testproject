@@ -4,21 +4,28 @@ from flask import Blueprint, render_template, request, redirect, flash, session
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import Tests, Tests_questions, Tests_answers, Test_scores
+from models import Tests, Tests_questions, Tests_answers, Test_scores, TestReport, User, get_category_choices
+from helpers import _create_notification
 
 tests_bp = Blueprint('tests', __name__)
+COMPLAINT_THRESHOLD = 3
 
 
 @tests_bp.route('/tests')
 def tests():
-    from models import User
     q_name = request.args.get('name', '').strip()
     q_author = request.args.get('author', '').strip()
+    q_cat = request.args.get('cat', '').strip()
     sort = request.args.get('sort', '')
 
     query = Tests.query.filter_by(test_status=2)
     if q_name:
         query = query.filter(Tests.test_name.ilike(f'%{q_name}%'))
+    if q_cat:
+        try:
+            query = query.filter(Tests.test_cat_id == int(q_cat))
+        except ValueError:
+            pass
 
     all_tests = query.all()
 
@@ -36,8 +43,12 @@ def tests():
     if sort == 'rating':
         all_tests.sort(key=lambda t: avg_scores[t.test_id] or 0, reverse=True)
 
+    categories = get_category_choices()
+    cat_map = {c['cat_id']: c['cat_name'] for c in categories}
+
     return render_template("tests.html", tests=all_tests, creators=creators, avg_scores=avg_scores,
-                           q_name=q_name, q_author=q_author, sort=sort)
+                           q_name=q_name, q_author=q_author, q_cat=q_cat, sort=sort,
+                           categories=categories, cat_map=cat_map)
 
 
 @tests_bp.route('/test/<test_name>')
@@ -63,6 +74,97 @@ def view_test(test_name):
     return render_template("test_info.html", test=test, questions_count=questions_count,
                            average_score=average_score, scores_count=len(scores),
                            user_score=user_score, active_test=active_test)
+
+
+@tests_bp.route('/test/<test_name>/report-complaint', methods=['POST'])
+@login_required
+def report_test_complaint(test_name):
+    test = Tests.query.filter_by(test_name=test_name, test_status=2).first()
+    if not test:
+        flash("Тест не найден или недоступен для жалобы.", 'danger')
+        return redirect("/tests")
+
+    if test.test_id_creator == current_user.id:
+        flash("Нельзя отправить жалобу на собственный тест.", 'warning')
+        return redirect(f"/test/{test_name}")
+
+    text = (request.form.get('complaint_text') or "").strip()
+    if not text:
+        flash("Опишите причину жалобы.", 'warning')
+        return redirect(f"/test/{test_name}")
+
+    existing = TestReport.query.filter_by(
+        tr_test_id=test.test_id, tr_user_id=current_user.id, tr_type='complaint', tr_resolved=False
+    ).first()
+    if existing:
+        flash("Вы уже отправляли жалобу на этот тест.", 'info')
+        return redirect(f"/test/{test_name}")
+
+    db.session.add(TestReport(
+        tr_test_id=test.test_id,
+        tr_user_id=current_user.id,
+        tr_type='complaint',
+        tr_text=text
+    ))
+
+    unique_complaints = db.session.query(TestReport.tr_user_id).filter_by(
+        tr_test_id=test.test_id, tr_type='complaint', tr_resolved=False
+    ).distinct().count()
+
+    if unique_complaints >= COMPLAINT_THRESHOLD and test.test_status == 2:
+        test.test_status = 3
+        for mod in User.query.filter(User.admin >= 1).all():
+            _create_notification(
+                user_id=mod.id,
+                sender_id=current_user.id,
+                text=(
+                    f"Тест \"{test.test_name}\" получил {unique_complaints} жалобы и переведен "
+                    f"в статус «на перепроверке»."
+                ),
+                link="/moderator/reported",
+                category='tests'
+            )
+        flash("Жалоба отправлена. Тест передан модераторам на перепроверку.", 'success')
+    else:
+        flash("Жалоба отправлена. Спасибо за обратную связь.", 'success')
+
+    db.session.commit()
+    return redirect(f"/test/{test_name}")
+
+
+@tests_bp.route('/test/<test_name>/report-error', methods=['POST'])
+@login_required
+def report_test_error(test_name):
+    test = Tests.query.filter_by(test_name=test_name, test_status=2).first()
+    if not test:
+        flash("Тест не найден или недоступен.", 'danger')
+        return redirect("/tests")
+
+    if test.test_id_creator == current_user.id:
+        flash("Вы автор этого теста. Используйте редактирование для исправлений.", 'info')
+        return redirect(f"/test/{test_name}")
+
+    text = (request.form.get('error_text') or "").strip()
+    if not text:
+        flash("Опишите найденную ошибку.", 'warning')
+        return redirect(f"/test/{test_name}")
+
+    db.session.add(TestReport(
+        tr_test_id=test.test_id,
+        tr_user_id=current_user.id,
+        tr_type='error',
+        tr_text=text
+    ))
+    _create_notification(
+        user_id=test.test_id_creator,
+        sender_id=current_user.id,
+        text=f"Пользователь сообщил об ошибке в тесте \"{test.test_name}\": {text}",
+        link=f"/edit-test/{test.test_id}",
+        category='tests'
+    )
+    db.session.commit()
+    flash("Сообщение об ошибке отправлено автору теста.", 'success')
+    return redirect(f"/test/{test_name}")
 
 
 @tests_bp.route('/test/<test_name>/start')

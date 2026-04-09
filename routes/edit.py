@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, redirect, flash, current_
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import Tests, Tests_questions, Tests_answers, TestComments
+from models import Tests, Tests_questions, Tests_answers, TestComments, get_category_choices
 from helpers import allowed_file, validate_test_name, delete_image, _revert_test_to_review, _create_notification
 
 edit_bp = Blueprint('edit', __name__)
@@ -22,7 +22,8 @@ def edit_test(test_id):
         flash("У вас нет прав для редактирования этого теста!", 'danger')
         return redirect("/tests")
     comments = TestComments.query.filter_by(tc_test_id=test.test_id).order_by(TestComments.tc_created_at.desc()).all()
-    return render_template("edit_test.html", test=test, comments=comments)
+    categories = get_category_choices()
+    return render_template("edit_test.html", test=test, comments=comments, categories=categories)
 
 
 @edit_bp.route('/edit-test/<int:test_id>/update', methods=["POST"])
@@ -60,6 +61,11 @@ def update_test(test_id):
 
     test.test_name = test_name
     test.test_description = test_description
+    raw_cat_id = (request.form.get('test_cat_id') or '').strip()
+    try:
+        test.test_cat_id = int(raw_cat_id) if raw_cat_id else None
+    except ValueError:
+        test.test_cat_id = None
 
     if current_user.admin >= 1 and test.test_id_creator != current_user.id:
         comment = request.form.get('moderator_comment', '').strip()

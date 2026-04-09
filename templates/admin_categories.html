@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Категории тестов{% endblock %}
+{% block main %}
+<div class="container mt-4" style="max-width: 600px;">
+    <h2 class="mb-4">Категории тестов</h2>
+
+    <form method="POST" action="/admin/categories/add" class="d-flex gap-2 mb-4">
+        <input type="text" class="form-control" name="name" placeholder="Название новой категории" required>
+        <button type="submit" class="btn btn-primary text-nowrap">Добавить</button>
+    </form>
+
+    <ul class="list-group">
+        {% for cat in categories %}
+        <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center gap-2">
+                <form method="POST" action="/admin/categories/update/{{ cat.cat_id }}" class="d-flex gap-2 flex-grow-1">
+                    <input type="text" class="form-control" name="name" value="{{ cat.cat_name }}" required>
+                    <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">
+                        <i class="bi bi-pencil"></i> Сохранить
+                    </button>
+                </form>
+                <form method="POST" action="/admin/categories/delete/{{ cat.cat_id }}"
+                      onsubmit="return confirm('Удалить категорию «{{ cat.cat_name }}»?');">
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <a href="/admin" class="btn btn-secondary mt-4">← Назад</a>
+</div>
+{% endblock %}

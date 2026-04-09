@@ -52,6 +52,17 @@
                                       required>{{ test.test_description }}</textarea>
                         </div>
 
+                        <!-- Категория теста -->
+                        <div class="mb-3">
+                            <label class="form-label">Категория</label>
+                            <select name="test_cat_id" class="form-select">
+                                <option value="">— Без категории —</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.cat_id }}" {% if test.test_cat_id == cat.cat_id %}selected{% endif %}>{{ cat.cat_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
                         <!-- Текущее изображение -->
                         {% if test.test_image %}
                         <div class="mb-3">
@@ -99,6 +110,7 @@
                             {% if test.test_status == 0 %}В разработке
                             {% elif test.test_status == 1 %}На проверке
                             {% elif test.test_status == 2 %}Опубликован
+                            {% elif test.test_status == 3 %}На перепроверке по жалобам
                             {% endif %}
                             <br>
                             <strong>ID создателя:</strong> {{ test.test_id_creator }}

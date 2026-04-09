@@ -94,13 +94,13 @@
 }
 
 .btn-warning {
-  background: #e8a020 !important;
+  background: #ffd700 !important;
   border-color: #e8a020 !important;
   color: #fff !important;
 }
 
 .btn-warning:hover {
-  background: #d4911a !important;
+  background: #ffd700 !important;
   border-color: #d4911a !important;
   color: #fff !important;
 }
@@ -130,6 +130,28 @@
 
 .btn-lg {
   border-radius: 12px !important;
+}
+
+/* Карточки-кнопки в панелях администратора/модератора */
+.panel-tile-link {
+  display: block;
+  color: inherit;
+}
+
+.panel-tile {
+  border-radius: 12px !important;
+  min-height: 220px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.panel-tile-link:hover .panel-tile {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.panel-tile-link:active .panel-tile {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
   /* Глобальное правило для всех card-img-top кроме .card-fixed */
@@ -406,13 +428,13 @@ html.dark .btn-outline-info:hover {
 }
 
 html.dark .btn-outline-warning {
-  color: #f0c060 !important;
+  color: #ffd700 !important;
   border-color: #5a4a1a !important;
   background-color: transparent !important;
 }
 
 html.dark .btn-outline-warning:hover {
-  background-color: #3a2e10 !important;
+  background-color: #ffd700 !important;
   color: #ffd880 !important;
 }
 
@@ -447,4 +469,9 @@ html.dark .input-group-text {
   background-color: var(--bg-input) !important;
   border-color: var(--border) !important;
   color: var(--text) !important;
+}
+
+/* Гарантируем видимость nav-ссылок */
+header .nav-link {
+  white-space: nowrap;
 }

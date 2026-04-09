@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Жалобы на тесты
+{% endblock %}
+
+{% block main %}
+<h2 class="mb-4">Тесты по жалобам</h2>
+{% if tests %}
+<div class="row g-3">
+  {% for test in tests %}
+  <div class="col-md-3">
+  <div class="card card-fixed">
+    {% if test.test_image %}
+        <img src="{{ url_for('static', filename='img/' + test.test_image) }}"
+             class="card-img-top"
+             alt="{{ test.test_name }}">
+      {% else %}
+        <img src="{{ url_for('static', filename='img/placeholder.png') }}"
+             class="card-img-top"
+             alt="Нет изображения">
+      {% endif %}
+
+    <div class="card-body">
+      <h5 class="card-name">{{ test.test_name|truncate(80) }}</h5>
+      <p class="card-description">{{ test.test_description|truncate(220) }}</p>
+      <p class="mb-2">
+        <span class="badge bg-danger">Жалоб: {{ report_counts.get(test.test_id, 0) }}</span>
+      </p>
+      <a href="{{ url_for('moderator_review_test', test_name=test.test_name) }}" class="btn btn-danger">
+        Перепроверить
+      </a>
+    </div>
+  </div>
+  </div>
+{% endfor %}
+{% else %}
+  <p>Сейчас нет тестов, ожидающих перепроверку по жалобам.</p>
+{% endif %}
+
+</div>
+{% endblock %}

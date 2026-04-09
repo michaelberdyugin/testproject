@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, flash
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import User
+from models import User, Tests, TestCategory, get_category_choices
 from helpers import _create_notification
 
 admin_bp = Blueprint('admin', __name__)
@@ -182,3 +182,74 @@ def admin_send_message():
     db.session.commit()
     flash(f"Сообщение отправлено {len(recipients)} пользователю(-ям).", 'success')
     return redirect("/admin/messages")
+
+
+@admin_bp.route('/admin/categories')
+@login_required
+def admin_categories():
+    err = _require_admin()
+    if err:
+        return err
+    categories = get_category_choices()
+    return render_template("admin_categories.html", categories=categories)
+
+
+@admin_bp.route('/admin/categories/add', methods=['POST'])
+@login_required
+def admin_add_category():
+    err = _require_admin()
+    if err:
+        return err
+    name = request.form.get('name', '').strip()
+    if not name:
+        flash("Название не может быть пустым!", 'danger')
+        return redirect("/admin/categories")
+    if TestCategory.query.filter_by(cat_name=name).first():
+        flash("Такая категория уже существует!", 'warning')
+        return redirect("/admin/categories")
+    db.session.add(TestCategory(cat_name=name))
+    db.session.commit()
+    flash(f"Категория «{name}» добавлена.", 'success')
+    return redirect("/admin/categories")
+
+
+@admin_bp.route('/admin/categories/update/<int:cat_id>', methods=['POST'])
+@login_required
+def admin_update_category(cat_id):
+    err = _require_admin()
+    if err:
+        return err
+    cat = TestCategory.query.get(cat_id)
+    if not cat:
+        flash("Категория не найдена!", 'danger')
+        return redirect("/admin/categories")
+
+    new_name = request.form.get('name', '').strip()
+    if not new_name:
+        flash("Название не может быть пустым!", 'danger')
+        return redirect("/admin/categories")
+    if TestCategory.query.filter(TestCategory.cat_name == new_name, TestCategory.cat_id != cat_id).first():
+        flash("Такая категория уже существует!", 'warning')
+        return redirect("/admin/categories")
+
+    cat.cat_name = new_name
+    db.session.commit()
+    flash("Категория обновлена.", 'success')
+    return redirect("/admin/categories")
+
+
+@admin_bp.route('/admin/categories/delete/<int:cat_id>', methods=['POST'])
+@login_required
+def admin_delete_category(cat_id):
+    err = _require_admin()
+    if err:
+        return err
+    cat = TestCategory.query.get(cat_id)
+    if not cat:
+        flash("Категория не найдена!", 'danger')
+        return redirect("/admin/categories")
+    Tests.query.filter_by(test_cat_id=cat_id).update({'test_cat_id': None})
+    db.session.delete(cat)
+    db.session.commit()
+    flash(f"Категория «{cat.cat_name}» удалена.", 'success')
+    return redirect("/admin/categories")

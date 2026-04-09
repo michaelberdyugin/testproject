@@ -92,8 +92,10 @@
 
 - **`User`** — пользователь
   - `id`, `username`, `password` (хэш), `email`, `admin` (0/1/2), `current_test_id`
+  - `notif_email_tests`, `notif_email_admin`, `notif_email_account`
 - **`Tests`** — тест
-  - `test_id`, `test_id_creator`, `test_name`, `test_description`, `test_status` (0 — разработка, 1 — на проверке, 2 — опубликован), `test_image`
+  - `test_id`, `test_id_creator`, `test_name`, `test_description`, `test_status` (0 — разработка, 1 — на проверке, 2 — опубликован), `test_image`, `test_cat_id`
+  - категории заданы в `models.py` как `DEFAULT_CATEGORIES`, а в `test_cat_id` хранится индекс категории
 - **`Tests_questions`** — вопрос теста
   - `test_q_id`, `test_q_test_id`, `test_q_text`, `test_q_type` (1/2/3/4 и 11/21/31/41 с изображением), `test_q_status`, `test_q_image`
 - **`Tests_answers`** — ответ на вопрос
@@ -104,8 +106,6 @@
   - `n_user_id`, `n_sender_id`, `n_text`, `n_link`, `n_is_read`, `n_created_at`
 - **`TestComments`** — комментарии модераторов к тестам
   - `tc_test_id`, `tc_user_id`, `tc_comment`, `tc_created_at`
-- **`UserNotificationSettings`** — настройки email-уведомлений
-  - `uns_user_id`, `uns_email_tests`, `uns_email_admin_messages`, `uns_email_account_changes`
 
 ---
 

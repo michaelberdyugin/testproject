@@ -126,29 +126,29 @@ def _render_createnext(current_test, last_question):
     )
 
 
-def _create_notification(user_id, sender_id, text, link=None, category=None):
+def _create_notification(user_id, sender_id, text, link=None, category=None,
+                         test_id=None, is_comment=False):
     """Создаёт уведомление и при необходимости отправляет email."""
-    from models import Notifications, User, UserNotificationSettings
+    from models import Notifications, User
     notification = Notifications(
         n_user_id=user_id,
         n_sender_id=sender_id,
         n_text=text,
-        n_link=link
+        n_link=link,
+        n_test_id=test_id,
+        n_is_comment=is_comment
     )
     db.session.add(notification)
 
     if category:
         user = User.query.get(user_id)
         if user and user.email:
-            settings = UserNotificationSettings.query.filter_by(uns_user_id=user_id).first()
             send_email = False
-            if settings is None:
+            if category == 'tests' and user.notif_email_tests:
                 send_email = True
-            elif category == 'tests' and settings.uns_email_tests:
+            elif category == 'admin_messages' and user.notif_email_admin:
                 send_email = True
-            elif category == 'admin_messages' and settings.uns_email_admin_messages:
-                send_email = True
-            elif category == 'account_changes' and settings.uns_email_account_changes:
+            elif category == 'account_changes' and user.notif_email_account:
                 send_email = True
 
             if send_email:

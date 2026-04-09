@@ -6,7 +6,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from flask_mail import Message
 
 from extensions import db, mail
-from models import User, UserNotificationSettings, Notifications
+from models import User, Notifications
 from helpers import _generate_code
 
 profile_bp = Blueprint('profile', __name__)
@@ -15,10 +15,9 @@ profile_bp = Blueprint('profile', __name__)
 @profile_bp.route('/profile')
 @login_required
 def profile():
-    settings = UserNotificationSettings.query.filter_by(uns_user_id=current_user.id).first()
     show_email_confirm = request.args.get("show_email_confirm") == "1"
     pending_email = session.get("pending_email", {}).get("new_email") if show_email_confirm else None
-    return render_template("profile.html", settings=settings,
+    return render_template("profile.html",
                            show_email_confirm=show_email_confirm,
                            pending_new_email=pending_email)
 
@@ -124,13 +123,9 @@ def profile_update_password():
 @profile_bp.route('/profile/notification-settings', methods=['POST'])
 @login_required
 def profile_notification_settings():
-    settings = UserNotificationSettings.query.filter_by(uns_user_id=current_user.id).first()
-    if not settings:
-        settings = UserNotificationSettings(uns_user_id=current_user.id)
-        db.session.add(settings)
-    settings.uns_email_tests = bool(request.form.get('email_tests'))
-    settings.uns_email_admin_messages = bool(request.form.get('email_admin_messages'))
-    settings.uns_email_account_changes = bool(request.form.get('email_account_changes'))
+    current_user.notif_email_tests = bool(request.form.get('email_tests'))
+    current_user.notif_email_admin = bool(request.form.get('email_admin_messages'))
+    current_user.notif_email_account = bool(request.form.get('email_account_changes'))
     db.session.commit()
     flash("Настройки уведомлений сохранены.", 'success')
     return redirect("/profile")

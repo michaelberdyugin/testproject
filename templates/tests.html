@@ -7,11 +7,19 @@
 {% block main %}
 
 <form method="GET" action="/tests" class="row g-2 mb-4 align-items-end">
-  <div class="col-sm-5">
+  <div class="col-sm-4">
     <input type="text" class="form-control" name="name" placeholder="Поиск по названию" value="{{ q_name }}">
   </div>
-  <div class="col-sm-4">
+  <div class="col-sm-3">
     <input type="text" class="form-control" name="author" placeholder="Поиск по автору" value="{{ q_author }}">
+  </div>
+  <div class="col-sm-2">
+    <select class="form-select" name="cat">
+      <option value="">Все категории</option>
+      {% for cat in categories %}
+      <option value="{{ cat.cat_id }}" {% if q_cat == cat.cat_id|string %}selected{% endif %}>{{ cat.cat_name }}</option>
+      {% endfor %}
+    </select>
   </div>
   <div class="col-sm-2">
     <select class="form-select" name="sort">
@@ -41,6 +49,9 @@
 
     <div class="card-body">
       <h5 class="card-name">{{test.test_name|truncate(80)}}</h5>
+      {% if test.test_cat_id is not none and test.test_cat_id in cat_map %}
+      <span class="badge bg-secondary mb-1">{{ cat_map[test.test_cat_id] }}</span>
+      {% endif %}
       <p class="card-description">{{test.test_description}}</p>
       <div class="d-flex justify-content-between align-items-center mb-2 text-muted small">
         <span class="text-truncate me-2" style="max-width: 60%;">

@@ -111,6 +111,34 @@
                         <i class="bi bi-play-circle"></i> Начать прохождение теста
                     </a>
                     {% endif %}
+
+                    {% if current_user.id != test.test_id_creator %}
+                    <button class="btn btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#complaintForm">
+                        <i class="bi bi-flag"></i> Пожаловаться на тест
+                    </button>
+                    <div class="collapse" id="complaintForm">
+                        <form method="POST" action="{{ url_for('report_test_complaint', test_name=test.test_name) }}" class="card card-body mt-2">
+                            <label class="form-label">Причина жалобы</label>
+                            <textarea class="form-control mb-2" name="complaint_text" rows="3" required></textarea>
+                            <button type="submit" class="btn btn-danger">
+                                Отправить жалобу
+                            </button>
+                        </form>
+                    </div>
+
+                    <button class="btn btn-outline-warning" type="button" data-bs-toggle="collapse" data-bs-target="#errorForm">
+                        <i class="bi bi-bug"></i> Сообщить об ошибке в тесте
+                    </button>
+                    <div class="collapse" id="errorForm">
+                        <form method="POST" action="{{ url_for('report_test_error', test_name=test.test_name) }}" class="card card-body mt-2">
+                            <label class="form-label">Описание ошибки</label>
+                            <textarea class="form-control mb-2" name="error_text" rows="3" required></textarea>
+                            <button type="submit" class="btn btn-warning">
+                                Отправить автору
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
                 {% else %}
                 <div class="alert alert-info" role="alert">
                     <i class="bi bi-info-circle"></i>
