@@ -93,17 +93,7 @@
   border-color: #278f5f !important;
 }
 
-.btn-warning {
-  background: #ffd700 !important;
-  border-color: #e8a020 !important;
-  color: #fff !important;
-}
 
-.btn-warning:hover {
-  background: #ffd700 !important;
-  border-color: #d4911a !important;
-  color: #fff !important;
-}
 
 .btn-danger {
   background: #d94f4f !important;
@@ -425,17 +415,6 @@ html.dark .btn-outline-info {
 html.dark .btn-outline-info:hover {
   background-color: #1e3a4a !important;
   color: #aae8ff !important;
-}
-
-html.dark .btn-outline-warning {
-  color: #ffd700 !important;
-  border-color: #5a4a1a !important;
-  background-color: transparent !important;
-}
-
-html.dark .btn-outline-warning:hover {
-  background-color: #ffd700 !important;
-  color: #ffd880 !important;
 }
 
 html.dark .btn-outline-success {
