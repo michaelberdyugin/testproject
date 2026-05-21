@@ -43,6 +43,14 @@ def shuffle_list_filter(lst):
     random.shuffle(result)
     return result
 
+@app.template_filter('from_json')
+def from_json_filter(json_str):
+    import json
+    try:
+        return json.loads(json_str)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+
 # --- Before request ---
 @app.before_request
 def check_must_rate_test():

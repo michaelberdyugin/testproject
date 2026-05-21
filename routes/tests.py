@@ -1,10 +1,11 @@
 import random
+import json
 
 from flask import Blueprint, render_template, request, redirect, flash, session
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import Tests, Tests_questions, Tests_answers, Test_scores, TestReport, User, get_category_choices
+from models import Tests, Tests_questions, Tests_answers, Test_scores, TestReport, User, get_category_choices, TestDetailedResults
 from helpers import _create_notification
 
 tests_bp = Blueprint('tests', __name__)
@@ -112,19 +113,19 @@ def report_test_complaint(test_name):
     ).distinct().count()
 
     if unique_complaints >= COMPLAINT_THRESHOLD and test.test_status == 2:
-        test.test_status = 3
+        # Отправляем уведомление модераторам, но НЕ меняем статус теста
         for mod in User.query.filter(User.admin >= 1).all():
             _create_notification(
                 user_id=mod.id,
                 sender_id=current_user.id,
                 text=(
-                    f"Тест \"{test.test_name}\" получил {unique_complaints} жалобы и переведен "
-                    f"в статус «на перепроверке»."
+                    f"Тест \"{test.test_name}\" получил {unique_complaints} жалобы. "
+                    f"Требуется внимание модератора."
                 ),
                 link="/moderator/reported",
                 category='tests'
             )
-        flash("Жалоба отправлена. Тест передан модераторам на перепроверку.", 'success')
+        flash("Жалоба отправлена. Модераторы уведомлены о большом количестве жалоб.", 'success')
     else:
         flash("Жалоба отправлена. Спасибо за обратную связь.", 'success')
 
@@ -224,40 +225,60 @@ def submit_test(test_name):
     questions = Tests_questions.query.filter_by(test_q_test_id=test.test_id, test_q_status=2).all()
     correct_answers = 0
     total_questions = len(questions)
+    user_answers = {}
 
     for question in questions:
         question_key = f"question_{question.test_q_id}"
+        user_answers[question.test_q_id] = {
+            'question_text': question.test_q_text,
+            'question_type': question.test_q_type,
+            'user_input': None,
+            'correct': False,
+            'correct_answers': [],
+            'user_answers': []
+        }
 
         if question.test_q_type in [1, 11]:
             user_answer_id = request.form.get(question_key)
             if user_answer_id:
                 answer = Tests_answers.query.get(int(user_answer_id))
+                user_answers[question.test_q_id]['user_answers'] = [user_answer_id]
                 if answer and answer.test_a_is_correct:
                     correct_answers += 1
+                    user_answers[question.test_q_id]['correct'] = True
 
         elif question.test_q_type in [2, 21]:
             user_answer_ids = request.form.getlist(question_key)
             correct_ids = [str(a.test_a_id) for a in Tests_answers.query.filter_by(
                 test_a_question_id=question.test_q_id, test_a_is_correct=True).all()]
+            user_answers[question.test_q_id]['user_answers'] = user_answer_ids
             if set(user_answer_ids) == set(correct_ids):
                 correct_answers += 1
+                user_answers[question.test_q_id]['correct'] = True
 
         elif question.test_q_type in [3, 31]:
             user_answer = (request.form.get(question_key) or "").strip().lower()
             correct_list = Tests_answers.query.filter_by(
                 test_a_question_id=question.test_q_id, test_a_is_correct=True).all()
+            user_answers[question.test_q_id]['user_input'] = user_answer
             if any(user_answer == a.test_a_text.strip().lower() for a in correct_list):
                 correct_answers += 1
+                user_answers[question.test_q_id]['correct'] = True
 
         elif question.test_q_type in [4, 41]:
             pairs = Tests_answers.query.filter_by(
                 test_a_question_id=question.test_q_id, test_a_status=2).all()
-            all_correct = all(
-                (request.form.get(f"match_{p.test_a_id}") or "").strip() == p.test_a_match.strip()
-                for p in pairs
-            )
+            user_matches = {}
+            all_correct = True
+            for p in pairs:
+                user_match = (request.form.get(f"match_{p.test_a_id}") or "").strip()
+                user_matches[p.test_a_id] = user_match
+                if user_match != p.test_a_match.strip():
+                    all_correct = False
+            user_answers[question.test_q_id]['user_input'] = user_matches
             if pairs and all_correct:
                 correct_answers += 1
+                user_answers[question.test_q_id]['correct'] = True
 
     percentage = (correct_answers / total_questions * 100) if total_questions > 0 else 0
     session['test_result'] = {
@@ -265,7 +286,9 @@ def submit_test(test_name):
         'test_id': test.test_id,
         'correct_answers': correct_answers,
         'total_questions': total_questions,
-        'percentage': percentage
+        'percentage': percentage,
+        'user_answers': user_answers,
+        'show_answers': test.show_answers_after_test
     }
     return redirect(f"/test/{test_name}/result")
 
@@ -290,8 +313,47 @@ def test_result(test_name):
     existing_score = Test_scores.query.filter_by(
         test_s_user_id=current_user.id, test_s_test_id=result['test_id']).first()
 
+    # Получаем детальную информацию о вопросах и ответах, если нужно показать ответы
+    detailed_results = None
+    if result.get('show_answers', True):
+        detailed_results = []
+        questions = Tests_questions.query.filter_by(test_q_test_id=test.test_id, test_q_status=2).all()
+        for question in questions:
+            answers = Tests_answers.query.filter_by(test_a_question_id=question.test_q_id, test_a_status=2).all()
+            # Ключи в user_answers сохранены как строки в сессии, поэтому преобразуем question.test_q_id в строку
+            user_answer_data = result.get('user_answers', {}).get(str(question.test_q_id), {})
+            
+            detailed_results.append({
+                'question': question,
+                'answers': answers,
+                'user_answer_data': user_answer_data
+            })
+
     session['must_rate_test'] = True
-    return render_template("test_result.html", test=test, result=result, existing_score=existing_score)
+    return render_template("test_result.html", test=test, result=result, 
+                          existing_score=existing_score, detailed_results=detailed_results,
+                          show_answers=result.get('show_answers', True))
+
+
+@tests_bp.route('/test/<test_name>/simple-rate')
+@login_required
+def simple_rate(test_name):
+    """Простая страница для оценки теста (чтобы выйти из debug)"""
+    if 'test_result' not in session:
+        flash("Результат теста не найден!", 'danger')
+        return redirect("/tests")
+
+    result = session['test_result']
+    if result['test_name'] != test_name:
+        flash("Неверный результат теста!", 'danger')
+        return redirect("/tests")
+
+    test = Tests.query.get(result['test_id'])
+    if not test:
+        flash("Тест не найден!", 'danger')
+        return redirect("/tests")
+
+    return render_template("simple_rate_form.html", test=test)
 
 
 @tests_bp.route('/test/<test_name>/rate', methods=["POST"])
@@ -328,9 +390,84 @@ def rate_test(test_name):
         ))
         msg = f"Спасибо за оценку! Ваш результат: {result['correct_answers']} из {result['total_questions']} ({result['percentage']:.1f}%)"
 
+    # Сохраняем детальные результаты, если автор теста включил показ ответов
+    test = Tests.query.get(result['test_id'])
+    if test and test.show_answers_after_test:
+        db.session.add(TestDetailedResults(
+            tdr_test_id=result['test_id'],
+            tdr_user_id=current_user.id,
+            tdr_correct_answers=result['correct_answers'],
+            tdr_total_questions=result['total_questions'],
+            tdr_percentage=result['percentage'],
+            tdr_user_answers=json.dumps(result.get('user_answers', {}))
+        ))
+
     current_user.current_test_id = None
     db.session.commit()
     session.pop('test_result', None)
     session.pop('must_rate_test', None)
     flash(msg, 'success')
     return redirect("/tests")
+
+
+@tests_bp.route('/test/<int:test_id>/results')
+@login_required
+def view_test_results(test_id):
+    """Просмотр результатов прохождения теста автором."""
+    test = Tests.query.get(test_id)
+    if not test:
+        flash("Тест не найден!", 'danger')
+        return redirect("/workshop")
+    
+    # Проверяем, что текущий пользователь - автор теста
+    if test.test_id_creator != current_user.id:
+        flash("Вы не являетесь автором этого теста!", 'danger')
+        return redirect("/workshop")
+    
+    # Получаем автора теста
+    author = User.query.get(test.test_id_creator)
+    
+    # Получаем количество вопросов
+    questions_count = Tests_questions.query.filter_by(test_q_test_id=test.test_id, test_q_status=2).count()
+    
+    # Параметры поиска и пагинации
+    search_query = request.args.get('search', '').strip()
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    # Запрос результатов
+    query = TestDetailedResults.query.filter_by(tdr_test_id=test_id)
+    
+    # Поиск по имени пользователя
+    if search_query:
+        query = query.join(User).filter(User.username.ilike(f'%{search_query}%'))
+    
+    # Сортировка по дате (новые сначала)
+    query = query.order_by(TestDetailedResults.tdr_created_at.desc())
+    
+    # Пагинация
+    total_results = query.count()
+    results = query.offset((page - 1) * per_page).limit(per_page).all()
+    total_pages = (total_results + per_page - 1) // per_page
+    
+    # Статистика
+    all_results = TestDetailedResults.query.filter_by(tdr_test_id=test_id).all()
+    if all_results:
+        avg_percentage = sum(r.tdr_percentage for r in all_results) / len(all_results)
+        best_percentage = max(r.tdr_percentage for r in all_results)
+        worst_percentage = min(r.tdr_percentage for r in all_results)
+    else:
+        avg_percentage = best_percentage = worst_percentage = 0
+    
+    return render_template("test_results_view.html", 
+                          test=test, 
+                          author=author,
+                          questions_count=questions_count,
+                          results=results,
+                          total_results=total_results,
+                          avg_percentage=avg_percentage,
+                          best_percentage=best_percentage,
+                          worst_percentage=worst_percentage,
+                          search_query=search_query,
+                          page=page,
+                          total_pages=total_pages)

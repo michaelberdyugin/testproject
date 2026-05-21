@@ -22,7 +22,7 @@
                     
                     <!-- Информация о тесте -->
                     <div class="row mt-4">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="text-center">
                                 <h3 class="text-primary">{{ questions_count }}</h3>
                                 <p class="text-muted">
@@ -36,7 +36,7 @@
                                 </p>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="text-center">
                                 {% if average_score > 0 %}
                                 <h3 class="text-warning">
@@ -59,10 +59,21 @@
                                 {% endif %}
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="text-center">
                                 <h3 class="text-info">~{{ (questions_count * 1.5)|round|int }} мин</h3>
                                 <p class="text-muted">примерное время</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                {% if test.show_answers_after_test %}
+                                <h3 class="text-success"><i class="bi bi-eye"></i></h3>
+                                <p class="text-muted">ответы показываются</p>
+                                {% else %}
+                                <h3 class="text-secondary"><i class="bi bi-eye-slash"></i></h3>
+                                <p class="text-muted">ответы скрыты</p>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -88,6 +99,17 @@
                         <i class="bi bi-info-circle"></i>
                         Вы уже оценили этот тест на <strong>{{ user_score.test_s_score }} из 5</strong>. 
                         При повторном прохождении вы сможете изменить свою оценку.
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Ссылка на просмотр результатов для автора -->
+                    {% if current_user.is_authenticated and current_user.id == test.test_id_creator %}
+                    <div class="alert alert-success mt-3" role="alert">
+                        <i class="bi bi-graph-up"></i>
+                        Вы являетесь автором этого теста. 
+                        <a href="{{ url_for('tests.view_test_results', test_id=test.test_id) }}" class="alert-link">
+                            Просмотреть результаты прохождения
+                        </a>
                     </div>
                     {% endif %}
                 </div>

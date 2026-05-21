@@ -32,6 +32,7 @@ class Tests(db.Model):
     test_status = db.Column(db.Integer)
     test_image = db.Column(db.String)
     test_cat_id = db.Column(db.Integer, default=None)  # ссылка на TestCategory.cat_id или None
+    show_answers_after_test = db.Column(db.Boolean, default=True)  # показывать правильные ответы после завершения теста
 
 
 class TestCategory(db.Model):
@@ -88,18 +89,48 @@ class Notifications(db.Model):
 
 
 class TestComments(db.Model):
+    __tablename__ = 'test_comments'
+    
     tc_id = db.Column(db.Integer, primary_key=True)
-    tc_test_id = db.Column(db.Integer, nullable=False)
-    tc_user_id = db.Column(db.Integer, nullable=False)
+    tc_test_id = db.Column(db.Integer, db.ForeignKey('tests.test_id', ondelete='CASCADE'), nullable=False)
+    tc_user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     tc_comment = db.Column(db.Text, nullable=False)
     tc_created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Связи
+    user = db.relationship('User', backref='test_comments')
+    test = db.relationship('Tests', backref='test_comments')
 
 
 class TestReport(db.Model):
+    __tablename__ = 'test_report'
+    
     tr_id = db.Column(db.Integer, primary_key=True)
-    tr_test_id = db.Column(db.Integer, nullable=False)
-    tr_user_id = db.Column(db.Integer, nullable=False)
+    tr_test_id = db.Column(db.Integer, db.ForeignKey('tests.test_id', ondelete='CASCADE'), nullable=False)
+    tr_user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     tr_type = db.Column(db.String(20), nullable=False)  # complaint | error
     tr_text = db.Column(db.Text, nullable=False)
     tr_created_at = db.Column(db.DateTime, default=datetime.utcnow)
     tr_resolved = db.Column(db.Boolean, default=False)
+    
+    # Связи
+    user = db.relationship('User', backref='test_reports')
+    test = db.relationship('Tests', backref='test_reports')
+
+
+class TestDetailedResults(db.Model):
+    """Детальные результаты прохождения тестов для просмотра авторами."""
+    __tablename__ = 'test_detailed_results'
+    
+    tdr_id = db.Column(db.Integer, primary_key=True)
+    tdr_test_id = db.Column(db.Integer, db.ForeignKey('tests.test_id', ondelete='CASCADE'), nullable=False)
+    tdr_user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    tdr_correct_answers = db.Column(db.Integer, nullable=False)
+    tdr_total_questions = db.Column(db.Integer, nullable=False)
+    tdr_percentage = db.Column(db.Float, nullable=False)
+    tdr_user_answers = db.Column(db.Text)  # JSON с ответами пользователя
+    tdr_created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Связи
+    user = db.relationship('User', backref='detailed_results')
+    test = db.relationship('Tests', backref='detailed_results')

@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, redirect, flash, current_
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import Tests, Tests_questions, Tests_answers, Test_scores, get_category_choices
+from models import Tests, Tests_questions, Tests_answers, Test_scores, TestDetailedResults, get_category_choices
 from helpers import (allowed_file, validate_test_name, delete_image,
                      _render_createnext, _calc_are_ready)
 
@@ -42,6 +42,7 @@ def create():
     test_name = request.form.get('test_name')
     test_description = request.form.get('test_description')
     raw_cat_id = (request.form.get('test_cat_id') or '').strip()
+    show_answers = request.form.get('show_answers', '1') == '1'  # по умолчанию показывать
     try:
         test_cat_id = int(raw_cat_id) if raw_cat_id else None
     except ValueError:
@@ -67,7 +68,8 @@ def create():
 
     test = Tests(test_name=test_name, test_description=test_description,
                  test_status=0, test_id_creator=current_user.id,
-                 test_image=image_filename, test_cat_id=test_cat_id)
+                 test_image=image_filename, test_cat_id=test_cat_id,
+                 show_answers_after_test=show_answers)
     db.session.add(test)
     db.session.commit()
     return redirect("/createq_0")
@@ -495,5 +497,6 @@ def _delete_test_data(test):
         db.session.delete(q)
     delete_image(test.test_image, upload_folder)
     Test_scores.query.filter_by(test_s_test_id=test.test_id).delete()
+    # Детальные результаты, жалобы и комментарии удалятся автоматически благодаря каскадному удалению
     db.session.delete(test)
     db.session.commit()

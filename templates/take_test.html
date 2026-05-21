@@ -193,7 +193,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 target.appendChild(draggedBlock);
                 draggedBlock.style.opacity = '1';
-                input.value = rowText;
+                // Сохраняем текст перетаскиваемого блока, а не текст зоны
+                input.value = draggedBlock.dataset.blockText;
             }
             updateProgress();
         });

@@ -173,6 +173,10 @@
                                            class="btn btn-secondary">
                                             <i class="bi bi-pencil"></i> Редактировать
                                         </a>
+                                        <a href="{{ url_for('tests.view_test_results', test_id=test.test_id) }}" 
+                                           class="btn btn-info">
+                                            <i class="bi bi-graph-up"></i> Результаты
+                                        </a>
                                         <button type="button"
                                                 class="btn btn-danger"
                                                 onclick="if(confirm('Удалить тест «{{ test.test_name }}»? Он будет снят с публикации. Это действие нельзя отменить!')) { document.getElementById('delete-published-{{ test.test_id }}').submit(); }">

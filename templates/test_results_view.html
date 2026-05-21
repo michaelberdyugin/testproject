@@ -1,0 +1,337 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Результаты прохождения теста: {{ test.test_name }}
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <!-- Заголовок и информация о тесте -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="card-title mb-1">Результаты прохождения теста</h1>
+                            <h2 class="text-primary">{{ test.test_name }}</h2>
+                            <p class="text-muted mb-0">
+                                <i class="bi bi-person"></i> Автор: {{ author.username }}
+                                <span class="mx-2">|</span>
+                                <i class="bi bi-question-circle"></i> Вопросов: {{ questions_count }}
+                                <span class="mx-2">|</span>
+                                <i class="bi bi-eye{% if test.show_answers_after_test %}-fill{% endif %}"></i>
+                                Показ ответов: {% if test.show_answers_after_test %}Включен{% else %}Отключен{% endif %}
+                            </p>
+                        </div>
+                        <a href="{{ url_for('workshop.workshop') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left"></i> Назад в мастерскую
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Поиск пользователей -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-search"></i> Поиск пользователей</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('tests.view_test_results', test_id=test.test_id) }}" class="row g-3">
+                        <div class="col-md-8">
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Поиск по имени пользователя..." 
+                                   value="{{ search_query }}">
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search"></i> Найти
+                            </button>
+                        </div>
+                    </form>
+                    {% if search_query %}
+                    <div class="mt-3">
+                        <a href="{{ url_for('tests.view_test_results', test_id=test.test_id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Сбросить поиск
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-primary">{{ total_results }}</h3>
+                            <p class="text-muted mb-0">Всего прохождений</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-success">{{ avg_percentage|round|int }}%</h3>
+                            <p class="text-muted mb-0">Средний результат</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-warning">{{ best_percentage|round|int }}%</h3>
+                            <p class="text-muted mb-0">Лучший результат</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-danger">{{ worst_percentage|round|int }}%</h3>
+                            <p class="text-muted mb-0">Худший результат</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Таблица результатов -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> Результаты прохождения</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if results %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Пользователь</th>
+                                    <th>Дата прохождения</th>
+                                    <th>Правильных ответов</th>
+                                    <th>Всего вопросов</th>
+                                    <th>Результат</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in results %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <strong>{{ result.user.username }}</strong>
+                                        {% if result.user.id == current_user.id %}
+                                        <span class="badge bg-info ms-1">Вы</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ result.tdr_created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                    <td>
+                                        <span class="badge {% if result.tdr_correct_answers == result.tdr_total_questions %}bg-success{% else %}bg-warning{% endif %}">
+                                            {{ result.tdr_correct_answers }}
+                                        </span>
+                                    </td>
+                                    <td>{{ result.tdr_total_questions }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                                <div class="progress-bar 
+                                                    {% if result.tdr_percentage >= 80 %}bg-success
+                                                    {% elif result.tdr_percentage >= 60 %}bg-warning
+                                                    {% else %}bg-danger
+                                                    {% endif %}" 
+                                                    role="progressbar" 
+                                                    style="width: {{ result.tdr_percentage }}%">
+                                                </div>
+                                            </div>
+                                            <span class="fw-bold">{{ result.tdr_percentage|round|int }}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#resultModal{{ result.tdr_id }}">
+                                            <i class="bi bi-eye"></i> Подробнее
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                        <h4 class="mt-3 text-muted">Нет результатов прохождения</h4>
+                        <p class="text-muted">Пользователи еще не проходили этот тест</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Пагинация -->
+            {% if results and results|length > 0 %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('tests.view_test_results', test_id=test.test_id, page=page-1, search=search_query) }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for p in range(1, total_pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('tests.view_test_results', test_id=test.test_id, page=p, search=search_query) }}">
+                            {{ p }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('tests.view_test_results', test_id=test.test_id, page=page+1, search=search_query) }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна для детального просмотра -->
+{% for result in results %}
+<div class="modal fade" id="resultModal{{ result.tdr_id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Результат пользователя: {{ result.user.username }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-success">{{ result.tdr_correct_answers }}</h3>
+                                <p class="text-muted mb-0">Правильных</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="text-primary">{{ result.tdr_total_questions }}</h3>
+                                <p class="text-muted mb-0">Всего</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h3 class="
+                                    {% if result.tdr_percentage >= 80 %}text-success
+                                    {% elif result.tdr_percentage >= 60 %}text-warning
+                                    {% else %}text-danger
+                                    {% endif %}
+                                ">{{ result.tdr_percentage|round|int }}%</h3>
+                                <p class="text-muted mb-0">Результат</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h6 class="mb-3">Детальные ответы:</h6>
+                {% if result.tdr_user_answers %}
+                    {% set user_answers = result.tdr_user_answers|from_json %}
+                    {% for question_id, answer_data in user_answers.items() %}
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Вопрос: {{ answer_data.question_text }}</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Тип вопроса:</strong> 
+                                    {% if answer_data.question_type in [1, 11] %}Один ответ
+                                    {% elif answer_data.question_type in [2, 21] %}Несколько ответов
+                                    {% elif answer_data.question_type in [3, 31] %}Ввод текста
+                                    {% elif answer_data.question_type in [4, 41] %}Перетаскивание
+                                    {% else %}Неизвестный тип
+                                    {% endif %}
+                                </p>
+                                
+                                <p><strong>Результат:</strong> 
+                                    {% if answer_data.correct %}
+                                        <span class="badge bg-success"><i class="bi bi-check"></i> Правильно</span>
+                                    {% else %}
+                                        <span class="badge bg-danger"><i class="bi bi-x"></i> Неправильно</span>
+                                    {% endif %}
+                                </p>
+                                
+                                {% if answer_data.question_type in [1, 11] %}
+                                    <p><strong>Выбранный ответ:</strong> 
+                                        {% if answer_data.user_answers and answer_data.user_answers|length > 0 %}
+                                            ID: {{ answer_data.user_answers[0] }}
+                                        {% else %}
+                                            <span class="text-muted">Не выбран</span>
+                                        {% endif %}
+                                    </p>
+                                
+                                {% elif answer_data.question_type in [2, 21] %}
+                                    <p><strong>Выбранные ответы:</strong> 
+                                        {% if answer_data.user_answers and answer_data.user_answers|length > 0 %}
+                                            {{ answer_data.user_answers|join(', ') }}
+                                        {% else %}
+                                            <span class="text-muted">Не выбраны</span>
+                                        {% endif %}
+                                    </p>
+                                
+                                {% elif answer_data.question_type in [3, 31] %}
+                                    <p><strong>Введенный ответ:</strong> 
+                                        {% if answer_data.user_input %}
+                                            "{{ answer_data.user_input }}"
+                                        {% else %}
+                                            <span class="text-muted">Не введен</span>
+                                        {% endif %}
+                                    </p>
+                                
+                                {% elif answer_data.question_type in [4, 41] %}
+                                    <p><strong>Сопоставления:</strong></p>
+                                    <ul class="list-group">
+                                        {% for block_id, match in answer_data.user_input.items() %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>Блок ID {{ block_id }}</span>
+                                            <span>{{ match }}</span>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Детальные ответы не сохранены
+                    </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<style>
+.progress {
+    min-width: 100px;
+}
+.table th {
+    font-weight: 600;
+}
+</style>
+{% endblock %}

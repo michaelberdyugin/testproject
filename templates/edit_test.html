@@ -63,6 +63,38 @@
                             </select>
                         </div>
 
+                        <!-- Сворачиваемый раздел "Дополнительные" -->
+                        <div class="mb-3">
+                            <button class="btn btn-outline-secondary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#additionalSettings">
+                                <i class="bi bi-gear"></i> Дополнительные настройки
+                            </button>
+                            <div class="collapse mt-3" id="additionalSettings">
+                                <div class="card card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Показывать правильные ответы после завершения теста:</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="show_answers" id="show_answers_yes" value="1" 
+                                                   {% if test.show_answers_after_test %}checked{% endif %}>
+                                            <label class="form-check-label" for="show_answers_yes">
+                                                Да, показывать
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="show_answers" id="show_answers_no" value="0"
+                                                   {% if not test.show_answers_after_test %}checked{% endif %}>
+                                            <label class="form-check-label" for="show_answers_no">
+                                                Нет, не показывать
+                                            </label>
+                                        </div>
+                                        <small class="text-muted">
+                                            Если включено, пользователи смогут видеть правильные ответы после завершения теста.
+                                            Вы также сможете просматривать детальные результаты прохождения.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Текущее изображение -->
                         {% if test.test_image %}
                         <div class="mb-3">

@@ -39,6 +39,7 @@ def update_test(test_id):
 
     test_name = request.form.get('test_name')
     test_description = request.form.get('test_description')
+    show_answers = request.form.get('show_answers', '1') == '1'
 
     if not validate_test_name(test_name):
         flash("Название теста содержит недопустимые символы!", 'danger')
@@ -61,6 +62,7 @@ def update_test(test_id):
 
     test.test_name = test_name
     test.test_description = test_description
+    test.show_answers_after_test = show_answers
     raw_cat_id = (request.form.get('test_cat_id') or '').strip()
     try:
         test.test_cat_id = int(raw_cat_id) if raw_cat_id else None
