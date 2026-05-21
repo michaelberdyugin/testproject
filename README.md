@@ -1,4 +1,5 @@
 ### Ссылка на сайт
+### [Ссылка на презентацию](https://docs.google.com/presentation/d/1hqIEJqc6AIlvh7MiYo6Gi-rjtRi46WGFngtYXtmyeN8/edit?usp=sharing)
 
 ### Данные для входа
 
