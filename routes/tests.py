@@ -272,7 +272,12 @@ def submit_test(test_name):
             all_correct = True
             for p in pairs:
                 user_match = (request.form.get(f"match_{p.test_a_id}") or "").strip()
-                user_matches[p.test_a_id] = user_match
+                # Сохраняем не только ID, но и текст блока
+                user_matches[str(p.test_a_id)] = {
+                    'block_text': p.test_a_text,
+                    'user_match': user_match,
+                    'correct_match': p.test_a_match
+                }
                 if user_match != p.test_a_match.strip():
                     all_correct = False
             user_answers[question.test_q_id]['user_input'] = user_matches
@@ -390,9 +395,9 @@ def rate_test(test_name):
         ))
         msg = f"Спасибо за оценку! Ваш результат: {result['correct_answers']} из {result['total_questions']} ({result['percentage']:.1f}%)"
 
-    # Сохраняем детальные результаты, если автор теста включил показ ответов
+    # Сохраняем детальные результаты, если автор теста включил сбор статистики
     test = Tests.query.get(result['test_id'])
-    if test and test.show_answers_after_test:
+    if test and test.collect_statistics:
         db.session.add(TestDetailedResults(
             tdr_test_id=result['test_id'],
             tdr_user_id=current_user.id,

@@ -54,7 +54,26 @@
                             </div>
                             <small class="text-muted">
                                 Если включено, пользователи смогут видеть правильные ответы после завершения теста.
-                                Вы также сможете просматривать детальные результаты прохождения.
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Собирать статистику для автора:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="collect_stats" id="collect_stats_yes" value="1" checked>
+                                <label class="form-check-label" for="collect_stats_yes">
+                                    Да, собирать
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="collect_stats" id="collect_stats_no" value="0">
+                                <label class="form-check-label" for="collect_stats_no">
+                                    Нет, не собирать
+                                </label>
+                            </div>
+                            <small class="text-muted">
+                                Если включено, вы сможете просматривать детальные результаты прохождения теста пользователями.
+                                Пользователи не будут видеть правильные ответы, если эта опция включена, а "Показывать ответы" отключена.
                             </small>
                         </div>
                     </div>

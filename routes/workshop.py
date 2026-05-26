@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, redirect, flash, current_
 from flask_login import login_required, current_user
 
 from extensions import db
-from models import Tests, Tests_questions, Tests_answers, Test_scores, TestDetailedResults, get_category_choices
+from models import Tests, Tests_questions, Tests_answers, Test_scores, TestDetailedResults, TestReport, TestComments, Notifications, get_category_choices
 from helpers import (allowed_file, validate_test_name, delete_image,
                      _render_createnext, _calc_are_ready)
 
@@ -43,6 +43,7 @@ def create():
     test_description = request.form.get('test_description')
     raw_cat_id = (request.form.get('test_cat_id') or '').strip()
     show_answers = request.form.get('show_answers', '1') == '1'  # по умолчанию показывать
+    collect_stats = request.form.get('collect_stats', '1') == '1'  # по умолчанию собирать
     try:
         test_cat_id = int(raw_cat_id) if raw_cat_id else None
     except ValueError:
@@ -69,7 +70,8 @@ def create():
     test = Tests(test_name=test_name, test_description=test_description,
                  test_status=0, test_id_creator=current_user.id,
                  test_image=image_filename, test_cat_id=test_cat_id,
-                 show_answers_after_test=show_answers)
+                 show_answers_after_test=show_answers,
+                 collect_statistics=collect_stats)
     db.session.add(test)
     db.session.commit()
     return redirect("/createq_0")
@@ -490,13 +492,32 @@ def workshop_delete_test(test_id):
 def _delete_test_data(test):
     """Удаляет тест со всеми вопросами, ответами и изображениями."""
     upload_folder = current_app.config['UPLOAD_FOLDER']
+    
+    # Удаляем вопросы и ответы
     questions = Tests_questions.query.filter_by(test_q_test_id=test.test_id).all()
     for q in questions:
         Tests_answers.query.filter_by(test_a_question_id=q.test_q_id).delete()
         delete_image(q.test_q_image, upload_folder)
         db.session.delete(q)
+    
+    # Удаляем изображение теста
     delete_image(test.test_image, upload_folder)
+    
+    # Удаляем оценки теста
     Test_scores.query.filter_by(test_s_test_id=test.test_id).delete()
-    # Детальные результаты, жалобы и комментарии удалятся автоматически благодаря каскадному удалению
+    
+    # Удаляем детальные результаты
+    TestDetailedResults.query.filter_by(tdr_test_id=test.test_id).delete()
+    
+    # Удаляем жалобы на тест
+    TestReport.query.filter_by(tr_test_id=test.test_id).delete()
+    
+    # Удаляем комментарии к тесту
+    TestComments.query.filter_by(tc_test_id=test.test_id).delete()
+    
+    # Удаляем уведомления, связанные с тестом
+    Notifications.query.filter_by(n_test_id=test.test_id).delete()
+    
+    # Удаляем сам тест
     db.session.delete(test)
     db.session.commit()

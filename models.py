@@ -33,6 +33,7 @@ class Tests(db.Model):
     test_image = db.Column(db.String)
     test_cat_id = db.Column(db.Integer, default=None)  # ссылка на TestCategory.cat_id или None
     show_answers_after_test = db.Column(db.Boolean, default=True)  # показывать правильные ответы после завершения теста
+    collect_statistics = db.Column(db.Boolean, default=True)  # собирать статистику для автора теста
 
 
 class TestCategory(db.Model):
